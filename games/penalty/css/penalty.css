@@ -1,0 +1,714 @@
+:root {
+    --gold:  #f5c518;
+    --red:   #e63946;
+    --blue:  #1d80e0;
+    --green: #4ade80;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+    font-family: 'Rajdhani', sans-serif;
+    background: #000;
+    width: 100%; height: 100%;
+    overflow: hidden;
+}
+
+/* ── FULL-SCREEN WRAP ── */
+.game-wrap {
+    position: fixed;
+    inset: 0;
+    overflow: hidden;
+}
+
+.screen {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    transition: opacity 0.35s, visibility 0.35s;
+}
+.screen.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+
+/* ── LOBBY BTN ── */
+.lobby-btn {
+    position: fixed; top: 14px; left: 14px;
+    padding: 7px 16px;
+    font-family: 'Bebas Neue', cursive; font-size: 14px; letter-spacing: 2px;
+    color: rgba(255,255,255,0.85);
+    background: rgba(0,0,0,0.45);
+    border: 1px solid rgba(255,255,255,0.18);
+    border-radius: 4px; cursor: pointer; z-index: 500;
+    backdrop-filter: blur(6px);
+    transition: all 0.2s;
+}
+.lobby-btn:hover { background: rgba(255,255,255,0.12); color: #fff; }
+
+/* ════════════════════════════════════════
+   MODE SELECT
+════════════════════════════════════════ */
+#screenMode { justify-content: center; }
+
+.mode-bg {
+    position: absolute; inset: 0;
+    background-image: url('../../assets/images/penalty/background.png');
+    background-size: cover;
+    background-position: center center;
+    z-index: 0;
+}
+.mode-bg::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse 90% 70% at 50% 100%, #0d4a1a 0%, #06111e 55%);
+    z-index: -1;
+}
+.mode-overlay {
+    position: absolute; inset: 0;
+    background: linear-gradient(180deg,
+        rgba(0,0,0,0.5) 0%, rgba(6,17,30,0.4) 50%, rgba(0,0,0,0.7) 100%);
+    z-index: 1;
+}
+.title-block, .mode-cards { position: relative; z-index: 2; }
+
+.title-league {
+    font-family: 'Bebas Neue', cursive; font-size: 0.85rem;
+    letter-spacing: 7px; color: var(--gold); opacity: 0.9; text-align: center;
+}
+.title-main {
+    font-family: 'Bebas Neue', cursive;
+    font-size: clamp(4rem, 13vw, 9rem);
+    color: #fff; text-align: center; line-height: 0.9;
+    letter-spacing: 4px;
+    text-shadow: 0 4px 0 #000, 0 0 80px rgba(245,197,24,0.3);
+}
+.title-main em { font-style: normal; color: var(--gold); }
+.title-sub {
+    font-size: 0.75rem; font-weight: 700; letter-spacing: 5px;
+    color: rgba(255,255,255,0.45); text-transform: uppercase; text-align: center;
+}
+.title-block { display: flex; flex-direction: column; gap: 6px; align-items: center; margin-bottom: 36px; }
+
+.mode-cards { display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; }
+.mode-card {
+    width: 210px; padding: 28px 20px 22px;
+    border-radius: 10px; border: 1px solid rgba(255,255,255,0.12);
+    cursor: pointer; text-align: center;
+    display: flex; flex-direction: column; align-items: center; gap: 9px;
+    background: rgba(0,0,0,0.5); backdrop-filter: blur(8px);
+    transition: transform 0.25s cubic-bezier(.34,1.56,.64,1), border-color 0.2s, background 0.2s;
+    position: relative; overflow: hidden;
+}
+.mode-card:hover { transform: translateY(-7px) scale(1.03); border-color: var(--gold); background: rgba(245,197,24,0.07); }
+.card-num { position: absolute; top: 10px; right: 14px; font-family: 'Bebas Neue', cursive; font-size: 2rem; color: rgba(255,255,255,0.06); }
+.card-icon { font-size: 2.8rem; }
+.mode-card h2 { font-family: 'Bebas Neue', cursive; font-size: 1.6rem; letter-spacing: 3px; color: #fff; }
+.mode-card p  { font-size: 0.78rem; color: rgba(255,255,255,0.5); font-weight: 600; line-height: 1.5; }
+.card-cta { margin-top: 8px; font-family: 'Bebas Neue', cursive; font-size: 0.85rem; letter-spacing: 3px; color: var(--gold); }
+
+/* ════════════════════════════════════════
+   GAME SCREEN — full screen, no black bars
+════════════════════════════════════════ */
+#screenGame {
+    background: transparent;
+    justify-content: flex-start;
+    position: fixed; inset: 0;
+}
+
+/* ── HUD — floating, transparent ── */
+.hud-bar {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 20px 8px;
+    background: rgba(0,0,0,0.55);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(255,255,255,0.07);
+    z-index: 20;
+}
+.hud-team { display: flex; flex-direction: column; align-items: center; gap: 3px; min-width: 90px; }
+.hud-name  { font-family: 'Bebas Neue', cursive; font-size: 0.7rem; letter-spacing: 4px; color: rgba(255,255,255,0.4); }
+.hud-score { font-family: 'Bebas Neue', cursive; font-size: 2.6rem; color: #fff; line-height: 1; }
+.hud-dots  { display: flex; gap: 4px; }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); transition: all 0.3s; }
+.dot.goal { background: var(--green); box-shadow: 0 0 6px var(--green); border-color: var(--green); }
+.dot.miss { background: var(--red); border-color: var(--red); }
+.hud-center { display: flex; flex-direction: column; align-items: center; gap: 1px; }
+.hud-round  { font-family: 'Bebas Neue', cursive; font-size: 2rem; color: var(--gold); line-height: 1; }
+.hud-label  { font-size: 0.6rem; letter-spacing: 4px; color: rgba(255,255,255,0.28); font-weight: 700; text-transform: uppercase; }
+
+/* ── STADIUM — full screen ── */
+.stadium {
+    position: absolute;
+    inset: 0;
+    background-image: url('../../assets/images/penalty/Background1.png');
+    background-size: cover;
+    background-position: center 25%;
+    background-repeat: no-repeat;
+    background-color: #1a5c28;
+    z-index: 0;
+}
+
+/* ── GOAL ── */
+.goal-wrap {
+    position: absolute;
+    top: 5%; left: 50%; transform: translateX(-50%);
+    width: 56%; max-width: 666px; height: 50%;
+    z-index: 3; overflow: visible;
+}
+.goal-img {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    object-fit: fill; z-index: 3; pointer-events: none;
+    filter: drop-shadow(0 8px 24px rgba(0,0,0,0.65));
+}
+.goal-fallback { position: absolute; inset: 0; z-index: 3; }
+.goalpost {
+    position: absolute; bottom: 0; width: 7px; height: 100%;
+    background: linear-gradient(90deg, #e0e0e0, #fff, #c0c0c0);
+    border-radius: 2px; box-shadow: 2px 0 8px rgba(0,0,0,0.5); z-index: 5;
+}
+.gp-left  { left: 0; }
+.gp-right { right: 0; }
+.crossbar {
+    position: absolute; top: 0; left: 0; right: 0; height: 7px;
+    background: linear-gradient(180deg, #fff, #d0d0d0);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.5); z-index: 5;
+}
+.goal-depth-l { position: absolute; top: 0; bottom: 0; left: 0; width: 14%; background: rgba(0,0,0,0.18); z-index: 2; }
+.goal-depth-r { position: absolute; top: 0; bottom: 0; right: 0; width: 14%; background: rgba(0,0,0,0.18); z-index: 2; }
+.goal-depth-t { position: absolute; top: 0; left: 0; right: 0; height: 18%; background: rgba(0,0,0,0.14); z-index: 2; }
+
+.goal-net {
+    position: absolute;
+    top: 14%; left: 9%; right: 9%; bottom: 0;
+    z-index: 4; overflow: visible;
+    background:
+        repeating-linear-gradient(0deg,   rgba(255,255,255,0.06) 0px, rgba(255,255,255,0.06) 1px, transparent 1px, transparent 16px),
+        repeating-linear-gradient(90deg,  rgba(255,255,255,0.06) 0px, rgba(255,255,255,0.06) 1px, transparent 1px, transparent 16px);
+}
+
+/* 9 ô click */
+.zones {
+    position: absolute; inset: 0;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(3, 1fr);
+    z-index: 6;
+}
+.zone {
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: background 0.1s, border-color 0.1s;
+    position: relative;
+}
+.zone:hover {
+    background: rgba(255,215,0,0.16);
+    border-color: rgba(255,215,0,0.55);
+}
+.zone:hover::after {
+    content: '✕';
+    position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%,-50%);
+    font-size: 1.4rem; color: rgba(255,215,0,0.7);
+    font-weight: 900; pointer-events: none;
+}
+.zone.target { background: rgba(255,215,0,0.28);  border-color: rgba(255,215,0,0.9); }
+.zone.saved  { background: rgba(230,57,70,0.42);   border-color: rgba(230,57,70,0.9); }
+.zone.scored { background: rgba(74,222,128,0.36);  border-color: rgba(74,222,128,0.9); }
+
+/* ── KEEPER ── */
+.keeper {
+    position: absolute; bottom: 0; left: 50%;
+    transform: translateX(-50%);
+    width: 250px; height: 500px;
+    z-index: 7; pointer-events: none;
+    filter: drop-shadow(0 4px 10px rgba(0,0,0,0.7));
+    display: flex; align-items: flex-end; justify-content: center;
+    transition: left 0.22s cubic-bezier(.34,1.56,.64,1), bottom 0.18s ease-out;
+    animation: keeperSway 1.6s ease-in-out infinite;
+}
+.keeper.diving { animation: none; }
+@keyframes keeperSway {
+    0%   { transform: translateX(-50%) translateY(0px)   rotate(-2deg)  scaleX(1);    }
+    12%  { transform: translateX(calc(-50% + 7px)) translateY(-4px) rotate(0deg) scaleX(1.03); }
+    25%  { transform: translateX(calc(-50% + 10px)) translateY(0px) rotate(2deg) scaleX(1); }
+    37%  { transform: translateX(calc(-50% + 6px)) translateY(-3px) rotate(0deg) scaleX(1.02); }
+    50%  { transform: translateX(-50%) translateY(0px)   rotate(-2deg)  scaleX(1);    }
+    62%  { transform: translateX(calc(-50% - 6px)) translateY(-4px) rotate(0deg) scaleX(1.03); }
+    75%  { transform: translateX(calc(-50% - 10px)) translateY(0px) rotate(2deg) scaleX(1); }
+    87%  { transform: translateX(calc(-50% - 6px)) translateY(-3px) rotate(0deg) scaleX(1.02); }
+    100% { transform: translateX(-50%) translateY(0px)   rotate(-2deg)  scaleX(1);    }
+}
+.keeper-img {
+    position: absolute; bottom: 0; left: 0;
+    width: 100%; height: 100%;
+    object-fit: contain; object-position: bottom;
+    opacity: 0; transition: opacity 0.18s ease-in-out; pointer-events: none;
+}
+.keeper-img.active { opacity: 1; }
+/* 9 tư thế riêng biệt — mỗi tư thế có kích thước độc lập */
+.keeper.pose-up         { width: 250px; height: 560px; }
+.keeper.pose-down       { width: 300px; height: 260px; }
+.keeper.pose-left       { width: 400px; height: 300px; }
+.keeper.pose-right      { width: 400px; height: 300px; }
+.keeper.pose-left-up    { width: 420px; height: 340px; }
+.keeper.pose-left-down  { width: 380px; height: 260px; }
+.keeper.pose-right-up   { width: 420px; height: 340px; }
+.keeper.pose-right-down { width: 380px; height: 260px; }
+.keeper.keeper-emoji::after { content: '🧤'; font-size: 2.2rem; }
+
+/* ── BALL ── */
+.ball {
+    position: absolute; bottom: 5%; left: 30%;
+    transform: translateX(-50%);
+    width: 160px; height: 160px; z-index: 9;
+    transition: all 0.42s cubic-bezier(.25,.46,.45,.94);
+    filter: drop-shadow(0 4px 8px rgba(0,0,0,0.7));
+    pointer-events: none;
+}
+.ball img { width: 100%; height: 100%; object-fit: contain; }
+/* .ball.flying size is controlled by JS perspective scaling */
+.ball.flying { /* no fixed override — JS sets width/height dynamically */ }
+.ball.ball-emoji::after { content: '⚽'; font-size: 2rem; display: block; }
+/* Bóng nảy squash — transform được inject inline bởi JS */
+
+/* ── SHOOTER — 3-phase sprite animation ── */
+.shooter-sprite {
+    position: absolute; bottom: 0; left: 40%;
+    transform: translateX(-52%);
+    width: 360px; height: 488px; z-index: 10;
+    filter: drop-shadow(0 8px 20px rgba(0,0,0,0.8));
+    pointer-events: none;
+    display: flex; align-items: flex-end; justify-content: center;
+}
+.shooter-sprite img { width: 100%; height: 100%; object-fit: contain; object-position: bottom; }
+.shooter-sprite.shooter-emoji::after { content: '🧑'; font-size: 5rem; display: block; }
+
+/* Phase 1 — chạy đà (shooter-2): cầu thủ bước tới, nghiêng người */
+.shooter-sprite.runup { animation: shooterRunup 0.38s cubic-bezier(.3,0,.55,1) forwards; }
+@keyframes shooterRunup {
+    0%   { transform: translateX(-52%) translateY(0px)   rotate(0deg)   scaleX(1);    }
+    25%  { transform: translateX(calc(-52% + 14px)) translateY(-6px)  rotate(-3deg)  scaleX(1.02); }
+    55%  { transform: translateX(calc(-52% + 32px)) translateY(-10px) rotate(-7deg)  scaleX(1.03); }
+    80%  { transform: translateX(calc(-52% + 48px)) translateY(-3px)  rotate(-12deg) scaleX(1.04); }
+    100% { transform: translateX(calc(-52% + 44px)) translateY(2px)   rotate(-8deg)  scaleX(1.03); }
+}
+
+/* Phase 2 — chân chạm bóng (shooter-3): xoay mạnh, squash & stretch */
+.shooter-sprite.kicking { animation: shooterKick 0.22s cubic-bezier(.15,1.8,.5,1) forwards; }
+@keyframes shooterKick {
+    0%   { transform: translateX(calc(-52% + 44px)) translateY(2px)   rotate(-8deg)  scaleX(1.03) scaleY(1);    }
+    30%  { transform: translateX(calc(-52% + 60px)) translateY(-18px) rotate(-24deg) scaleX(1.10) scaleY(0.92); }
+    65%  { transform: translateX(calc(-52% + 52px)) translateY(-8px)  rotate(-16deg) scaleX(0.97) scaleY(1.05); }
+    100% { transform: translateX(calc(-52% + 42px)) translateY(0px)   rotate(-6deg)  scaleX(1)    scaleY(1);    }
+}
+
+/* Phase 3 — impact: bounce back sau cú sút */
+.shooter-sprite.impact { animation: shooterImpact 0.38s cubic-bezier(.25,.46,.45,.94) forwards; }
+@keyframes shooterImpact {
+    0%   { transform: translateX(calc(-52% + 42px)) translateY(0px)  rotate(-6deg); }
+    40%  { transform: translateX(calc(-52% + 28px)) translateY(-5px) rotate(-2deg); }
+    70%  { transform: translateX(calc(-52% + 18px)) translateY(0px)  rotate(2deg);  }
+    100% { transform: translateX(-52%) translateY(0px)                rotate(0deg);  }
+}
+
+/* Screen shake khi bóng rời chân */
+@keyframes screenShake {
+    0%   { transform: translate(0, 0)      rotate(0deg);    }
+    12%  { transform: translate(-6px, -4px) rotate(-0.4deg); }
+    25%  { transform: translate(7px, 3px)  rotate(0.5deg);  }
+    37%  { transform: translate(-5px, 5px) rotate(-0.3deg); }
+    50%  { transform: translate(4px, -3px) rotate(0.3deg);  }
+    62%  { transform: translate(-3px, 2px) rotate(-0.2deg); }
+    75%  { transform: translate(3px, -2px) rotate(0.1deg);  }
+    88%  { transform: translate(-1px, 1px) rotate(0);       }
+    100% { transform: translate(0, 0)      rotate(0);       }
+}
+.screen-shake { animation: screenShake 0.42s cubic-bezier(.36,.07,.19,.97) both; }
+
+/* ── RESULT FLASH ── */
+.result-flash {
+    position: absolute; top: 38%; left: 50%;
+    transform: translate(-50%, -50%);
+    font-family: 'Bebas Neue', cursive;
+    font-size: clamp(2.5rem, 10vw, 5rem); letter-spacing: 6px;
+    padding: 14px 48px; border-radius: 6px;
+    z-index: 50; pointer-events: none;
+    animation: flashPop 0.35s cubic-bezier(.34,1.56,.64,1);
+    text-align: center;
+}
+.result-flash.goal-flash { background: rgba(0,0,0,0.8); color: var(--green); border: 2px solid var(--green); text-shadow: 0 0 30px var(--green); }
+.result-flash.miss-flash { background: rgba(0,0,0,0.8); color: var(--red);   border: 2px solid var(--red);   text-shadow: 0 0 30px var(--red); }
+.result-flash.save-flash { background: rgba(0,0,0,0.8); color: #60b4ff;      border: 2px solid #60b4ff;      text-shadow: 0 0 30px #60b4ff; }
+.result-flash.hidden { display: none; }
+@keyframes flashPop {
+    from { transform: translate(-50%,-50%) scale(0.4); opacity: 0; }
+    to   { transform: translate(-50%,-50%) scale(1);   opacity: 1; }
+}
+
+/* ── ACTION HINT — floating transparent bottom bar ── */
+.action-panel {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    padding: 10px 16px 12px;
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+    background: transparent;
+    z-index: 20;
+    pointer-events: none;
+}
+.action-hint {
+    font-family: 'Bebas Neue', cursive;
+    font-size: 1rem; letter-spacing: 5px;
+    color: var(--gold);
+    text-align: center;
+    min-height: 1.4em;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.9);
+}
+
+/* ════════════════════════════════════════
+   POWER BAR + ARROW CONTROLS — transparent overlay
+   Positioned at bottom of screen, above action hint
+════════════════════════════════════════ */
+#powerBarWrap {
+    position: absolute;
+    bottom: 36px;          /* above action hint text */
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    z-index: 25;
+    pointer-events: auto;
+    transition: opacity 0.2s;
+    /* fully transparent — no background */
+    background: transparent;
+    padding: 0;
+}
+#powerBarWrap.hidden { display: none; }
+
+/* Power bar row */
+.power-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: min(440px, 90vw);
+}
+
+.power-key-hint {
+    font-family: 'Bebas Neue', cursive;
+    font-size: 0.72rem; letter-spacing: 2px;
+    color: rgba(255,255,255,0.55);
+    white-space: nowrap; flex-shrink: 0;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.9);
+}
+
+.power-bar-track {
+    flex: 1; height: 12px;
+    background: rgba(0,0,0,0.35);
+    border-radius: 6px;
+    border: 1px solid rgba(255,255,255,0.22);
+    overflow: hidden; position: relative;
+    backdrop-filter: blur(4px);
+}
+/* Danger zone marker at 85% */
+.power-bar-track::after {
+    content: '';
+    position: absolute; right: 15%; top: 0; bottom: 0;
+    width: 2px;
+    background: rgba(255,80,80,0.6);
+    border-radius: 1px;
+}
+#powerBarFill {
+    height: 100%; width: 0%;
+    border-radius: 6px;
+    background: #4ade80;
+    position: relative; transition: background 0.1s;
+}
+#powerBarFill::after {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(180deg, rgba(255,255,255,0.28) 0%, transparent 60%);
+    border-radius: 6px;
+}
+
+#powerBarLabel {
+    font-family: 'Bebas Neue', cursive;
+    font-size: 0.75rem; letter-spacing: 2px;
+    color: rgba(255,255,255,0.6);
+    min-width: 80px; text-align: right; flex-shrink: 0;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.9);
+    transition: color 0.15s;
+}
+#powerBarWrap.active .power-bar-track {
+    box-shadow: 0 0 0 2px rgba(245,197,24,0.35);
+    animation: barPulse 0.6s ease-in-out infinite alternate;
+}
+#powerBarWrap.active #powerBarLabel { color: var(--gold); }
+@keyframes barPulse {
+    from { box-shadow: 0 0 0 1px rgba(245,197,24,0.2); }
+    to   { box-shadow: 0 0 0 3px rgba(245,197,24,0.5); }
+}
+
+/* Control row: arrow pad + direction indicator + shoot button */
+.control-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+/* ── 3×3 arrow pad — all 8 directions + center ── */
+.arrow-pad {
+    display: grid;
+    grid-template-columns: repeat(3, 34px);
+    grid-template-rows:    repeat(3, 34px);
+    gap: 3px;
+}
+
+.arrow-btn {
+    width: 34px; height: 34px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1rem;
+    border-radius: 5px;
+    border: 1px solid rgba(255,255,255,0.2);
+    background: rgba(0,0,0,0.35);
+    backdrop-filter: blur(6px);
+    color: rgba(255,255,255,0.75);
+    cursor: pointer;
+    user-select: none; -webkit-user-select: none;
+    touch-action: none;
+    transition: background 0.1s, border-color 0.1s, transform 0.1s, box-shadow 0.1s;
+    font-family: sans-serif;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+}
+
+/* Grid placement — all 8 directions */
+.arrow-btn[data-dir="up"]         { grid-column: 2; grid-row: 1; }
+.arrow-btn[data-dir="up-left"]    { grid-column: 1; grid-row: 1; }
+.arrow-btn[data-dir="up-right"]   { grid-column: 3; grid-row: 1; }
+.arrow-btn[data-dir="left"]       { grid-column: 1; grid-row: 2; }
+.arrow-btn[data-dir="right"]      { grid-column: 3; grid-row: 2; }
+.arrow-btn[data-dir="down-left"]  { grid-column: 1; grid-row: 3; }
+.arrow-btn[data-dir="down"]       { grid-column: 2; grid-row: 3; }
+.arrow-btn[data-dir="down-right"] { grid-column: 3; grid-row: 3; }
+
+/* Center indicator */
+.arrow-center {
+    grid-column: 2; grid-row: 2;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Bebas Neue', cursive; font-size: 1.3rem;
+    color: rgba(255,255,255,0.5);
+    text-shadow: 0 1px 4px rgba(0,0,0,0.9);
+}
+
+.arrow-btn:hover {
+    background: rgba(255,255,255,0.18);
+    border-color: rgba(255,255,255,0.4);
+}
+.arrow-btn.active {
+    background: var(--gold);
+    border-color: var(--gold);
+    color: #000;
+    transform: scale(1.15);
+    box-shadow: 0 0 12px rgba(245,197,24,0.6);
+    text-shadow: none;
+}
+
+/* Shoot button (mobile) */
+#shootBtn {
+    width: 60px; height: 104px;
+    border-radius: 8px;
+    border: 1px solid rgba(245,197,24,0.5);
+    background: rgba(0,0,0,0.35);
+    backdrop-filter: blur(6px);
+    color: var(--gold);
+    font-family: 'Bebas Neue', cursive;
+    font-size: 0.8rem; letter-spacing: 2px;
+    cursor: pointer;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 4px;
+    user-select: none; touch-action: none;
+    transition: background 0.1s, transform 0.1s;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.9);
+}
+#shootBtn:hover   { background: rgba(245,197,24,0.18); }
+#shootBtn:active,
+#shootBtn.pressed { background: rgba(245,197,24,0.3); transform: scale(0.95); }
+#shootBtn .shoot-icon { font-size: 1.7rem; line-height: 1; }
+
+/* On desktop, hide shoot button */
+@media (hover: hover) and (pointer: fine) {
+    #shootBtn { display: none; }
+    .control-row { gap: 10px; }
+}
+
+/* ════════════════════════════════════════
+   RESULT SCREEN
+════════════════════════════════════════ */
+#screenResult {
+    justify-content: center;
+    overflow: hidden;
+}
+
+/* Real div background — works on file:// */
+.result-bg {
+    position: absolute; inset: 0; z-index: 0;
+    background-size: cover;
+    background-position: center center;
+    background-repeat: no-repeat;
+    transform: scale(1.06);
+    filter: brightness(0.7) saturate(1.2);
+    transition: transform 1.8s cubic-bezier(.25,.46,.45,.94);
+}
+#screenResult:not(.hidden) .result-bg {
+    transform: scale(1);
+}
+
+/* dark vignette */
+.result-vignette {
+    position: absolute; inset: 0; z-index: 1;
+    background:
+        radial-gradient(ellipse 80% 60% at 50% 110%, rgba(0,0,0,0) 0%, rgba(0,0,0,0.7) 100%),
+        linear-gradient(180deg, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.08) 40%, rgba(0,0,0,0.6) 100%);
+}
+
+.result-card {
+    position: relative; z-index: 2;
+    display: flex; flex-direction: column; align-items: center; gap: 16px;
+    background: rgba(0,0,0,0.52);
+    border: 1px solid rgba(255,255,255,0.13);
+    border-radius: 16px;
+    padding: 36px 60px 44px;
+    backdrop-filter: blur(18px);
+    box-shadow: 0 0 0 1px rgba(245,197,24,0.08), 0 32px 80px rgba(0,0,0,0.7);
+    animation: cardIn 0.55s cubic-bezier(.34,1.56,.64,1) both;
+}
+@keyframes cardIn {
+    from { transform: translateY(36px) scale(0.88); opacity: 0; }
+    to   { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+/* ketqua.png shown INSIDE the card as a banner */
+.result-img-wrap {
+    width: 320px; max-height: 130px;
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 2px;
+}
+.result-img {
+    max-width: 100%; max-height: 130px;
+    object-fit: contain; border-radius: 8px;
+    filter: drop-shadow(0 6px 24px rgba(0,0,0,0.7));
+}
+
+.result-trophy {
+    font-size: 4rem; line-height: 1;
+    animation: bounceIn 0.6s cubic-bezier(.34,1.56,.64,1) 0.15s both;
+    filter: drop-shadow(0 0 24px rgba(245,197,24,0.6));
+}
+@keyframes bounceIn {
+    from { transform: scale(0) rotate(-25deg); opacity: 0; }
+    to   { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+
+.result-title {
+    font-family: 'Bebas Neue', cursive;
+    font-size: clamp(3rem, 8vw, 4.2rem);
+    letter-spacing: 8px; color: var(--gold);
+    text-shadow: 0 0 60px rgba(245,197,24,0.7), 0 4px 0 rgba(0,0,0,0.8);
+    animation: titleGlow 2s ease-in-out 0.4s infinite alternate;
+}
+@keyframes titleGlow {
+    from { text-shadow: 0 0 30px rgba(245,197,24,0.5), 0 4px 0 rgba(0,0,0,0.8); }
+    to   { text-shadow: 0 0 80px rgba(245,197,24,0.95), 0 4px 0 rgba(0,0,0,0.8), 0 0 120px rgba(245,197,24,0.4); }
+}
+
+.result-score-wrap {
+    display: flex; align-items: center; gap: 18px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 8px; padding: 10px 28px;
+}
+.rs-label {
+    font-family: 'Bebas Neue', cursive;
+    font-size: 0.9rem; letter-spacing: 5px;
+    color: rgba(255,255,255,0.4);
+}
+.rs-score {
+    font-family: 'Bebas Neue', cursive;
+    font-size: 3.2rem; color: #fff;
+    letter-spacing: 6px; line-height: 1;
+    text-shadow: 0 2px 12px rgba(0,0,0,0.8);
+}
+
+/* ketqua.png là full background rồi — ẩn banner trong card */
+.result-img-wrap { display: none; }
+
+
+.result-btns { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin-top: 8px; }
+.rbtn {
+    padding: 12px 26px; font-family: 'Bebas Neue', cursive;
+    font-size: 1rem; letter-spacing: 3px;
+    border-radius: 7px; border: none; cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s;
+}
+.rbtn:hover  { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.4); }
+.rbtn:active { transform: translateY(0); }
+.rbtn-play  { background: var(--green); color: #002a0e; box-shadow: 0 4px 16px rgba(74,222,128,0.3); }
+.rbtn-play:hover { box-shadow: 0 8px 32px rgba(74,222,128,0.5); }
+.rbtn-menu  { background: var(--blue);  color: #fff; box-shadow: 0 4px 16px rgba(29,128,224,0.3); }
+.rbtn-menu:hover { box-shadow: 0 8px 32px rgba(29,128,224,0.5); }
+.rbtn-lobby { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.7); border: 1px solid rgba(255,255,255,0.15); }
+.rbtn-lobby:hover { background: rgba(255,255,255,0.15); color: #fff; }
+
+/* ── WALLET CONNECT ── */
+.wallet-wrap {
+    position: fixed; top: 14px; right: 14px;
+    display: flex; flex-direction: column; align-items: flex-end;
+    gap: 5px; z-index: 500;
+}
+
+.wallet-btn {
+    display: flex; align-items: center; gap: 7px;
+    padding: 7px 14px;
+    font-family: 'Bebas Neue', cursive; font-size: 13px; letter-spacing: 2px;
+    color: rgba(255,255,255,0.9);
+    background: rgba(0,0,0,0.5);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 5px; cursor: pointer;
+    backdrop-filter: blur(6px);
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+.wallet-btn:hover:not(:disabled) {
+    background: rgba(29,128,224,0.25);
+    border-color: var(--blue);
+    color: #fff;
+}
+.wallet-btn:disabled {
+    opacity: 0.6; cursor: not-allowed;
+}
+.wallet-btn.connected {
+    border-color: rgba(74,222,128,0.5);
+    background: rgba(74,222,128,0.08);
+    color: var(--green);
+}
+.wallet-icon { font-size: 14px; line-height: 1; }
+
+.wallet-network {
+    display: flex; align-items: center; gap: 5px;
+    font-family: 'Rajdhani', sans-serif; font-size: 11px; font-weight: 600;
+    letter-spacing: 1px; color: rgba(255,255,255,0.6);
+    padding: 3px 8px;
+    background: rgba(0,0,0,0.4);
+    border-radius: 4px;
+    border: 1px solid rgba(255,255,255,0.08);
+    backdrop-filter: blur(4px);
+}
+.net-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+}
+.dot-green { background: var(--green); box-shadow: 0 0 6px var(--green); }
+.dot-yellow { background: var(--gold); box-shadow: 0 0 6px var(--gold); }

@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Tug of War – SMIC GAME</title>
+    <link rel="stylesheet" href="css/tug.css">
+</head>
+<body>
+    <div class="game-container">
+        <!-- Nút về lobby -->
+        <button class="lobby-btn" onclick="goLobby()">🏠 LOBBY</button>
+
+        <div class="start-menu" id="startMenu">
+            <h1 class="game-title">TUG OF WAR</h1>
+            <p class="select-hint">CHOOSE MAP TO PLAY</p>
+            <div class="map-selection">
+                <div class="map-item" onclick="selectMap('../../assets/images/tugofwar/background1.png')">
+                    <img src="../../assets/images/tugofwar/background1.png" alt="Map 1">
+                    <span>Green steppe</span>
+                </div>
+                <div class="map-item" onclick="selectMap('../../assets/images/tugofwar/background2.png')">
+                    <img src="../../assets/images/tugofwar/background2.png" alt="Map 2">
+                    <span>Pharaoh's desert</span>
+                </div>
+                <div class="map-item" onclick="selectMap('../../assets/images/tugofwar/background3.png')">
+                    <img src="../../assets/images/tugofwar/background3.png" alt="Map 3">
+                    <span>Summer Beach</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="team-menu hidden" id="teamMenu">
+            <h1 class="game-title">CHOOSE YOUR TEAM</h1>
+            <p class="select-hint">BOT WILL PLAY THE OPPOSITE TEAM</p>
+            <div class="team-selection">
+                <div class="team-box btn-red" onclick="selectTeam('left')">
+                    <img src="../../assets/images/tugofwar/team_left.png" alt="Red Team" class="team-preview-img">
+                    <h2>RED TEAM</h2>
+                    <span>(LEFT SIDE)</span>
+                </div>
+                <div class="team-box btn-blue" onclick="selectTeam('right')">
+                    <img src="../../assets/images/tugofwar/team_right.png" alt="Blue Team" class="team-preview-img">
+                    <h2>BLUE TEAM</h2>
+                    <span>(RIGHT SIDE)</span>
+                </div>
+            </div>
+        </div>
+
+        <canvas id="fireworksCanvas"></canvas>
+        <div class="game-background" id="gameBg"></div>
+        <button class="stop-btn" id="btnStop" onclick="backToMenu()">STOP GAME</button>
+
+        <div class="audi-container hidden" id="audiContainer">
+            <div class="level-indicator" id="levelIndicator">LEVEL: 1</div>
+            <div class="arrow-chain" id="arrowChain"></div>
+            <div class="time-bar-wrapper">
+                <div class="time-bar-inner" id="timeBar"></div>
+            </div>
+            <p class="audi-hint">Nhập đúng chuỗi mũi tên và nhấn <span class="key-cap">SPACE</span></p>
+        </div>
+
+        <button class="control-btn" id="btnLeft"  onclick="handleVirtualPull('left')">TEAM LEFT PULL</button>
+        <button class="control-btn" id="btnRight" onclick="handleVirtualPull('right')">TEAM RIGHT PULL</button>
+
+        <div class="character-center" id="charCenter"></div>
+        <div class="team team-left"  id="teamLeft"><div class="dust-effect"></div></div>
+        <div class="team team-right" id="teamRight"><div class="dust-effect"></div></div>
+
+        <div class="rope-container" id="ropeContainer">
+            <img src="../../assets/images/tugofwar/rope.png" alt="Rope" class="rope">
+            <img src="../../assets/images/tugofwar/flag.png" alt="Flag" class="flag">
+        </div>
+
+        <div class="overlay" id="victoryOverlay">
+            <div class="overlay-content">
+                <h2 id="winnerText">🎉 RED TEAM WINS!</h2>
+                <button class="restart-btn" onclick="resetGame()">Play Again</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/tug.js"></script>
+    <script>
+        function goLobby() {
+            window.location.href = '../../index.html';
+        }
+
+        // Chặn Ctrl+Scroll zoom (desktop)
+        window.addEventListener('wheel', function(e) {
+            if (e.ctrlKey) e.preventDefault();
+        }, { passive: false });
+
+        // Chặn pinch zoom (mobile/trackpad)
+        window.addEventListener('touchmove', function(e) {
+            if (e.touches.length > 1) e.preventDefault();
+        }, { passive: false });
+
+        // Chặn Ctrl+Plus / Ctrl+Minus / Ctrl+0
+        window.addEventListener('keydown', function(e) {
+            if (e.ctrlKey && (e.key === '+' || e.key === '-' || e.key === '=' || e.key === '0')) {
+                e.preventDefault();
+            }
+        });
+    </script>
+</body>
+</html>

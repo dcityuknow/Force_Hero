@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SMIC GAME HUB</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Nunito:wght@700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="lobby-container">
+        <div class="stars" id="stars"></div>
+
+        <header class="lobby-header">
+            <div class="logo-badge">🎮</div>
+            <h1 class="lobby-title">SMIC<span>GAME</span></h1>
+            <p class="lobby-sub">Choose your game and let's play!</p>
+        </header>
+
+        <div class="game-grid">
+            <!-- TUG OF WAR -->
+            <div class="game-card" id="card-tug" onclick="launchGame('games/tugofwar/tugofwar.html')">
+                <div class="card-glow glow-red"></div>
+                <div class="card-icon">🪢</div>
+                <div class="card-badge">MULTIPLAYER</div>
+                <h2 class="card-title">TUG OF WAR</h2>
+                <p class="card-desc">Type arrow sequences to pull the rope.<br>Reach Level 9 for power items!</p>
+                <div class="card-tags">
+                    <span class="tag">Keyboard</span>
+                    <span class="tag">VS Bot</span>
+                    <span class="tag">Level 1–9</span>
+                </div>
+                <div class="card-play-btn">PLAY NOW →</div>
+            </div>
+
+            <!-- PENALTY SHOOTOUT -->
+            <div class="game-card" id="card-penalty" onclick="launchGame('games/penalty/penalty.html')">
+                <div class="card-glow glow-green"></div>
+                <div class="card-icon">⚽</div>
+                <div class="card-badge new-badge">NEW</div>
+                <h2 class="card-title">PENALTY<br>SHOOTOUT</h2>
+                <p class="card-desc">Choose to shoot or save.<br>5 rounds — who wins the cup?</p>
+                <div class="card-tags">
+                    <span class="tag">Shooter</span>
+                    <span class="tag">Goalkeeper</span>
+                    <span class="tag">VS Bot</span>
+                </div>
+                <div class="card-play-btn">PLAY NOW →</div>
+            </div>
+        </div>
+
+        <footer class="lobby-footer">
+            <span>SMIC GAME HUB • 2025</span>
+        </footer>
+    </div>
+
+    <script src="js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,235 @@
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+    min-height: 100vh;
+    background: #0a0e1a;
+    font-family: 'Nunito', sans-serif;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* ── STARS BACKGROUND ── */
+.stars {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+}
+.star {
+    position: absolute;
+    border-radius: 50%;
+    background: #fff;
+    animation: twinkle var(--dur) ease-in-out infinite alternate;
+    opacity: var(--op);
+}
+@keyframes twinkle {
+    from { opacity: var(--op); transform: scale(1); }
+    to   { opacity: calc(var(--op) * 0.2); transform: scale(0.6); }
+}
+
+/* ── LOBBY CONTAINER ── */
+.lobby-container {
+    position: relative;
+    z-index: 1;
+    width: 100vw;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 32px 20px;
+    gap: 36px;
+}
+
+/* ── HEADER ── */
+.lobby-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+.logo-badge {
+    font-size: 3rem;
+    filter: drop-shadow(0 0 20px #ffd700);
+    animation: float 3s ease-in-out infinite;
+}
+@keyframes float {
+    0%,100% { transform: translateY(0); }
+    50%      { transform: translateY(-10px); }
+}
+.lobby-title {
+    font-family: 'Bangers', cursive;
+    font-size: clamp(3rem, 8vw, 5.5rem);
+    letter-spacing: 6px;
+    color: #fff;
+    text-shadow: 0 0 30px rgba(255,255,255,0.3);
+    line-height: 1;
+}
+.lobby-title span {
+    color: #ffd700;
+    text-shadow: 0 0 40px #ffd700, 0 4px 0 #b8860b;
+}
+.lobby-sub {
+    font-size: 1rem;
+    color: rgba(255,255,255,0.5);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    font-weight: 700;
+}
+
+/* ── GAME GRID ── */
+.game-grid {
+    display: flex;
+    gap: 32px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+/* ── GAME CARD ── */
+.game-card {
+    position: relative;
+    width: 300px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 24px;
+    padding: 36px 28px 28px;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    overflow: hidden;
+    transition: transform 0.25s cubic-bezier(.34,1.56,.64,1), border-color 0.25s;
+    backdrop-filter: blur(10px);
+}
+.game-card:hover {
+    transform: translateY(-10px) scale(1.02);
+    border-color: rgba(255,255,255,0.25);
+}
+.game-card:hover .card-glow { opacity: 1; }
+.game-card:hover .card-play-btn { gap: 10px; letter-spacing: 3px; }
+
+.card-glow {
+    position: absolute;
+    inset: 0;
+    border-radius: 24px;
+    opacity: 0;
+    transition: opacity 0.3s;
+    pointer-events: none;
+}
+.glow-red  { background: radial-gradient(circle at 50% 0%, rgba(220,50,50,0.25) 0%, transparent 70%); }
+.glow-green{ background: radial-gradient(circle at 50% 0%, rgba(40,200,100,0.25) 0%, transparent 70%); }
+
+.card-icon {
+    font-size: 3.5rem;
+    filter: drop-shadow(0 4px 12px rgba(0,0,0,0.5));
+    animation: cardFloat 4s ease-in-out infinite;
+}
+#card-penalty .card-icon { animation-delay: -2s; }
+@keyframes cardFloat {
+    0%,100% { transform: translateY(0) rotate(-3deg); }
+    50%      { transform: translateY(-8px) rotate(3deg); }
+}
+
+.card-badge {
+    font-size: 0.65rem;
+    font-weight: 900;
+    letter-spacing: 2px;
+    padding: 3px 12px;
+    border-radius: 20px;
+    background: rgba(255,255,255,0.12);
+    color: rgba(255,255,255,0.7);
+    text-transform: uppercase;
+}
+.new-badge {
+    background: linear-gradient(90deg, #ff6b35, #ffd700);
+    color: #000;
+    box-shadow: 0 0 16px rgba(255,107,53,0.6);
+}
+
+.card-title {
+    font-family: 'Bangers', cursive;
+    font-size: 2.2rem;
+    letter-spacing: 3px;
+    color: #fff;
+    text-align: center;
+    line-height: 1.1;
+    text-shadow: 0 2px 0 rgba(0,0,0,0.5);
+}
+#card-tug .card-title      { color: #ff7070; text-shadow: 0 0 20px rgba(255,100,100,0.5), 0 2px 0 #7a0000; }
+#card-penalty .card-title  { color: #5deb8a; text-shadow: 0 0 20px rgba(50,220,100,0.5), 0 2px 0 #005a1e; }
+
+.card-desc {
+    font-size: 0.85rem;
+    color: rgba(255,255,255,0.55);
+    text-align: center;
+    line-height: 1.6;
+    font-weight: 700;
+}
+
+.card-tags {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-top: 4px;
+}
+.tag {
+    font-size: 0.7rem;
+    font-weight: 900;
+    letter-spacing: 1px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    border: 1px solid rgba(255,255,255,0.15);
+    color: rgba(255,255,255,0.6);
+    text-transform: uppercase;
+}
+
+.card-play-btn {
+    margin-top: 10px;
+    font-family: 'Bangers', cursive;
+    font-size: 1.2rem;
+    letter-spacing: 2px;
+    padding: 10px 28px;
+    border-radius: 40px;
+    color: #fff;
+    transition: letter-spacing 0.2s, background 0.2s;
+    border: 2px solid rgba(255,255,255,0.2);
+    background: rgba(255,255,255,0.07);
+}
+#card-tug:hover .card-play-btn {
+    background: rgba(220,50,50,0.3);
+    border-color: #ff7070;
+    box-shadow: 0 0 20px rgba(220,50,50,0.4);
+}
+#card-penalty:hover .card-play-btn {
+    background: rgba(40,200,100,0.25);
+    border-color: #5deb8a;
+    box-shadow: 0 0 20px rgba(40,200,100,0.4);
+}
+
+/* ── FOOTER ── */
+.lobby-footer {
+    font-size: 0.75rem;
+    color: rgba(255,255,255,0.2);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    font-weight: 700;
+}
+
+/* ── LAUNCH TRANSITION ── */
+.launch-overlay {
+    position: fixed;
+    inset: 0;
+    background: #0a0e1a;
+    z-index: 999;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.35s ease;
+}
+.launch-overlay.active {
+    opacity: 1;
+    pointer-events: auto;
+}

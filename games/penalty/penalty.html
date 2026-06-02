@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Penalty Shootout – SMIC GAME</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/penalty.css">
+</head>
+<body>
+<div class="game-wrap" id="gameWrap">
+
+    <button class="lobby-btn" onclick="goLobby()">← LOBBY</button>
+
+    <!-- WALLET CONNECT BTN -->
+    <div class="wallet-wrap" id="walletWrap">
+        <button class="wallet-btn" id="walletBtn" onclick="connectWallet()">
+            <span class="wallet-icon">🦊</span>
+            <span id="walletBtnText">CONNECT WALLET</span>
+        </button>
+        <div class="wallet-network" id="walletNetwork" style="display:none">
+            <span class="net-dot" id="netDot"></span>
+            <span id="netLabel">ARC Testnet</span>
+        </div>
+    </div>
+
+    <!-- ============ MODE SELECT ============ -->
+    <div class="screen" id="screenMode">
+        <div class="mode-bg">
+            <img src="../../assets/images/penalty/Background.png" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;">
+        </div>
+        <div class="mode-overlay"></div>
+        <div class="title-block">
+            <div class="title-league">SMIC GAME HUB</div>
+            <h1 class="title-main">PENALTY<br><em>SHOOTOUT</em></h1>
+            <p class="title-sub">5 rounds · pick your side</p>
+        </div>
+        <div class="mode-cards">
+            <div class="mode-card" onclick="startGame('shooter')">
+                <div class="card-num">01</div>
+                <div class="card-icon">⚽</div>
+                <h2>SHOOTER</h2>
+                <p>Chọn góc trên khung thành để sút</p>
+                <div class="card-cta">SELECT →</div>
+            </div>
+            <div class="mode-card" onclick="startGame('keeper')">
+                <div class="card-num">02</div>
+                <div class="card-icon">🧤</div>
+                <h2>GOALKEEPER</h2>
+                <p>Chọn góc trên khung thành để nhảy chặn</p>
+                <div class="card-cta">SELECT →</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============ GAME SCREEN ============ -->
+    <div class="screen hidden" id="screenGame">
+
+        <!-- HUD -->
+        <div class="hud-bar">
+            <div class="hud-team hud-left">
+                <span class="hud-name" id="playerLabel">YOU</span>
+                <span class="hud-score" id="playerScore">0</span>
+                <div class="hud-dots" id="playerDots"></div>
+            </div>
+            <div class="hud-center">
+                <div class="hud-round" id="sbRound">1 / 5</div>
+                <div class="hud-label">ROUND</div>
+            </div>
+            <div class="hud-team hud-right">
+                <span class="hud-name">BOT</span>
+                <span class="hud-score" id="botScore">0</span>
+                <div class="hud-dots" id="botDots"></div>
+            </div>
+        </div>
+
+        <!-- STADIUM — Background1.png làm nền toàn sân -->
+        <div class="stadium" id="field">
+
+            <img src="../../assets/images/penalty/Background1.png" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;pointer-events:none;">
+
+            <!-- GOAL — goal.png + zones tương tác -->
+            <div class="goal-wrap" id="goalWrap">
+                <img class="goal-img" src="../../assets/images/penalty/goal.png" alt="goal"
+                     id="goalImg"
+                     onerror="this.style.display='none'; document.getElementById('goalFallback').style.display='block'">
+
+                <div id="goalFallback" class="goal-fallback" style="display:none">
+                    <div class="goalpost gp-left"></div>
+                    <div class="goalpost gp-right"></div>
+                    <div class="crossbar"></div>
+                    <div class="goal-depth-l"></div>
+                    <div class="goal-depth-r"></div>
+                    <div class="goal-depth-t"></div>
+                </div>
+
+                <!-- Lưới + 9 zone click -->
+                <div class="goal-net" id="goalNet">
+                    <div class="zones" id="zones">
+                        <div class="zone" data-zone="0"></div>
+                        <div class="zone" data-zone="1"></div>
+                        <div class="zone" data-zone="2"></div>
+                        <div class="zone" data-zone="3"></div>
+                        <div class="zone" data-zone="4"></div>
+                        <div class="zone" data-zone="5"></div>
+                        <div class="zone" data-zone="6"></div>
+                        <div class="zone" data-zone="7"></div>
+                        <div class="zone" data-zone="8"></div>
+                    </div>
+
+                    <!-- KEEPER — 9 pose: stand / up / down / left / right / left-up / left-down / right-up / right-down -->
+                    <div class="keeper" id="keeper">
+                        <img class="keeper-img active" id="keeperStand"
+                             src="../../assets/images/penalty/goalkeeper.png" alt="GK"
+                             onerror="this.closest('.keeper').classList.add('keeper-emoji')">
+                        <img class="keeper-img" id="keeperUp"
+                             src="../../assets/images/penalty/goalkeeper-up.png" alt="GK-U">
+                        <img class="keeper-img" id="keeperDown"
+                             src="../../assets/images/penalty/goalkeeper-down.png" alt="GK-D">
+                        <img class="keeper-img" id="keeperLeft"
+                             src="../../assets/images/penalty/goalkeeper-left.png" alt="GK-L">
+                        <img class="keeper-img" id="keeperRight"
+                             src="../../assets/images/penalty/goalkeeper-right.png" alt="GK-R">
+                        <img class="keeper-img" id="keeperLeftUp"
+                             src="../../assets/images/penalty/goalkeeper-left-up.png" alt="GK-LU">
+                        <img class="keeper-img" id="keeperLeftDown"
+                             src="../../assets/images/penalty/goalkeeper-left-down.png" alt="GK-LD">
+                        <img class="keeper-img" id="keeperRightUp"
+                             src="../../assets/images/penalty/goalkeeper-right-up.png" alt="GK-RU">
+                        <img class="keeper-img" id="keeperRightDown"
+                             src="../../assets/images/penalty/goalkeeper-right-down.png" alt="GK-RD">
+                    </div>
+                </div>
+            </div>
+
+            <!-- BALL -->
+            <div class="ball" id="ball">
+                <img src="../../assets/images/penalty/ball.png" alt="ball"
+                     onerror="this.style.display='none'; this.parentElement.classList.add('ball-emoji')">
+            </div>
+
+            <!-- SHOOTER — chỉ hiển thị trong shooter mode -->
+            <div class="shooter-sprite" id="shooterSprite">
+                <img src="../../assets/images/penalty/shooter.png" alt="shooter"
+                     onerror="this.style.display='none'; this.parentElement.classList.add('shooter-emoji')">
+            </div>
+
+        </div><!-- /stadium -->
+
+        <!-- Result Flash overlay -->
+        <div class="result-flash hidden" id="resultFlash"></div>
+
+        <!-- POWER BAR + ARROW CONTROLS (Shooter mode only) -->
+        <div id="powerBarWrap" class="hidden">
+            <div class="power-row">
+                <span class="power-key-hint">[D] HOLD</span>
+                <div class="power-bar-track">
+                    <div id="powerBarFill"></div>
+                </div>
+                <span id="powerBarLabel">-</span>
+            </div>
+            <div class="control-row">
+                <div class="arrow-pad">
+                    <button class="arrow-btn" data-dir="up-left">↖</button>
+                    <button class="arrow-btn" data-dir="up">↑</button>
+                    <button class="arrow-btn" data-dir="up-right">↗</button>
+                    <button class="arrow-btn" data-dir="left">←</button>
+                    <div class="arrow-center" id="arrowDisplay">•</div>
+                    <button class="arrow-btn" data-dir="right">→</button>
+                    <button class="arrow-btn" data-dir="down-left">↙</button>
+                    <button class="arrow-btn" data-dir="down">↓</button>
+                    <button class="arrow-btn" data-dir="down-right">↘</button>
+                </div>
+                <button id="shootBtn">
+                    <span class="shoot-icon">⚽</span>
+                    <span>SHOOT</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Action hint bar (dưới sân) -->
+        <div class="action-panel" id="actionPanel">
+            <p class="action-hint" id="actionHint">CLICK VÀO KHUNG THÀNH ĐỂ SÚT</p>
+        </div>
+
+    </div><!-- /screenGame -->
+
+    <!-- ============ RESULT SCREEN ============ -->
+    <div class="screen hidden" id="screenResult">
+        <div class="result-card">
+            <div class="result-img-wrap">
+                <img class="result-img" src="../../assets/images/penalty/ketqua.png" alt=""
+                     onerror="this.style.display='none'">
+            </div>
+            <div class="result-trophy" id="resultTrophy">🏆</div>
+            <h2 class="result-title" id="resultTitle">YOU WIN!</h2>
+            <div class="result-score-wrap">
+                <span class="rs-label">YOU</span>
+                <span class="rs-score" id="resultSub">5 – 3</span>
+                <span class="rs-label">BOT</span>
+            </div>
+            <div class="result-btns">
+                <button class="rbtn rbtn-play"  onclick="rematch()">⟳ REMATCH</button>
+                <button class="rbtn rbtn-menu"  onclick="goMode()">MODE</button>
+                <button class="rbtn rbtn-lobby" onclick="goLobby()">LOBBY</button>
+            </div>
+        </div>
+    </div>
+
+</div>
+<script src="js/wallet.js"></script>
+<script src="js/penalty.js"></script>
+<script>
+    // Chặn Ctrl+Scroll zoom (desktop)
+    window.addEventListener('wheel', function(e) {
+        if (e.ctrlKey) e.preventDefault();
+    }, { passive: false });
+
+    // Chặn pinch zoom (mobile/trackpad)
+    window.addEventListener('touchmove', function(e) {
+        if (e.touches.length > 1) e.preventDefault();
+    }, { passive: false });
+
+    // Chặn Ctrl+Plus / Ctrl+Minus / Ctrl+0
+    window.addEventListener('keydown', function(e) {
+        if (e.ctrlKey && (e.key === '+' || e.key === '-' || e.key === '=' || e.key === '0')) {
+            e.preventDefault();
+        }
+    });
+</script>
+</body>
+</html>
