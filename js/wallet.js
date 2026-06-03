@@ -130,7 +130,7 @@ async function switchToARC() {
         params: [{
           chainId: ARC_CHAIN_ID,
           chainName: 'ARC Testnet',
-          nativeCurrency: { name: 'USDC', symbol: 'USDC', decimals: 6 },
+          nativeCurrency: { name: 'USDC', symbol: 'USDC', decimals: 18 }, // MetaMask requires 18
           rpcUrls: [ARC_RPC],
           blockExplorerUrls: ['https://testnet.arcscan.app']
         }]
