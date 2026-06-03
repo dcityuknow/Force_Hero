@@ -7,19 +7,91 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/penalty.css">
+    <style>
+        /* ── Wallet UI shared styles ── */
+        .wallet-wrap {
+            position: fixed;
+            top: 12px;
+            right: 14px;
+            z-index: 999;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 5px;
+        }
+        .wallet-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .wallet-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 14px;
+            border: 2px solid rgba(255,255,255,0.25);
+            border-radius: 999px;
+            background: rgba(0,0,0,0.55);
+            color: #fff;
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 0.82rem;
+            font-weight: 700;
+            letter-spacing: .05em;
+            cursor: pointer;
+            transition: border-color .2s, background .2s;
+            backdrop-filter: blur(6px);
+        }
+        .wallet-btn:hover { border-color: rgba(255,255,255,.6); }
+        .wallet-btn.connected { border-color: #4ade80; background: rgba(0,0,0,.65); }
+        .wallet-icon { font-size: 1rem; }
+        .disconnect-btn {
+            display: none;
+            align-items: center;
+            gap: 5px;
+            padding: 5px 11px;
+            border: 2px solid rgba(248,113,113,.5);
+            border-radius: 999px;
+            background: rgba(0,0,0,.5);
+            color: #f87171;
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 0.78rem;
+            font-weight: 700;
+            letter-spacing: .04em;
+            cursor: pointer;
+            transition: border-color .2s, background .2s;
+            backdrop-filter: blur(6px);
+        }
+        .disconnect-btn:hover { border-color: #f87171; background: rgba(248,113,113,.15); }
+        .wallet-network {
+            display: none;
+            align-items: center;
+            gap: 5px;
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 0.72rem;
+            font-weight: 600;
+            color: rgba(255,255,255,.7);
+            padding-right: 4px;
+        }
+        .net-dot { width: 7px; height: 7px; border-radius: 50%; }
+        .dot-green  { background: #4ade80; box-shadow: 0 0 6px #4ade80; }
+        .dot-yellow { background: #facc15; box-shadow: 0 0 6px #facc15; }
+    </style>
 </head>
 <body>
 <div class="game-wrap" id="gameWrap">
 
     <button class="lobby-btn" onclick="goLobby()">← LOBBY</button>
 
-    <!-- WALLET CONNECT BTN -->
+    <!-- WALLET CONNECT / DISCONNECT -->
     <div class="wallet-wrap" id="walletWrap">
-        <button class="wallet-btn" id="walletBtn" onclick="connectWallet()">
-            <span class="wallet-icon">🦊</span>
-            <span id="walletBtnText">CONNECT WALLET</span>
-        </button>
-        <div class="wallet-network" id="walletNetwork" style="display:none">
+        <div class="wallet-row">
+            <button class="wallet-btn" id="walletBtn" onclick="connectWallet()">
+                <span class="wallet-icon">🦊</span>
+                <span id="walletBtnText">CONNECT WALLET</span>
+            </button>
+            <button class="disconnect-btn" id="disconnectBtn" onclick="disconnectWallet()">✕ DISCONNECT</button>
+        </div>
+        <div class="wallet-network" id="walletNetwork">
             <span class="net-dot" id="netDot"></span>
             <span id="netLabel">ARC Testnet</span>
         </div>
@@ -75,12 +147,10 @@
             </div>
         </div>
 
-        <!-- STADIUM — Background1.png làm nền toàn sân -->
+        <!-- STADIUM -->
         <div class="stadium" id="field">
-
             <img src="../../assets/images/penalty/Background1.png" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;pointer-events:none;">
 
-            <!-- GOAL — goal.png + zones tương tác -->
             <div class="goal-wrap" id="goalWrap">
                 <img class="goal-img" src="../../assets/images/penalty/goal.png" alt="goal"
                      id="goalImg"
@@ -95,7 +165,6 @@
                     <div class="goal-depth-t"></div>
                 </div>
 
-                <!-- Lưới + 9 zone click -->
                 <div class="goal-net" id="goalNet">
                     <div class="zones" id="zones">
                         <div class="zone" data-zone="0"></div>
@@ -109,7 +178,6 @@
                         <div class="zone" data-zone="8"></div>
                     </div>
 
-                    <!-- KEEPER — 9 pose: stand / up / down / left / right / left-up / left-down / right-up / right-down -->
                     <div class="keeper" id="keeper">
                         <img class="keeper-img active" id="keeperStand"
                              src="../../assets/images/penalty/goalkeeper.png" alt="GK"
@@ -134,24 +202,19 @@
                 </div>
             </div>
 
-            <!-- BALL -->
             <div class="ball" id="ball">
                 <img src="../../assets/images/penalty/ball.png" alt="ball"
                      onerror="this.style.display='none'; this.parentElement.classList.add('ball-emoji')">
             </div>
 
-            <!-- SHOOTER — chỉ hiển thị trong shooter mode -->
             <div class="shooter-sprite" id="shooterSprite">
                 <img src="../../assets/images/penalty/shooter.png" alt="shooter"
                      onerror="this.style.display='none'; this.parentElement.classList.add('shooter-emoji')">
             </div>
+        </div>
 
-        </div><!-- /stadium -->
-
-        <!-- Result Flash overlay -->
         <div class="result-flash hidden" id="resultFlash"></div>
 
-        <!-- POWER BAR + ARROW CONTROLS (Shooter mode only) -->
         <div id="powerBarWrap" class="hidden">
             <div class="power-row">
                 <span class="power-key-hint">[D] HOLD</span>
@@ -179,7 +242,6 @@
             </div>
         </div>
 
-        <!-- Action hint bar (dưới sân) -->
         <div class="action-panel" id="actionPanel">
             <p class="action-hint" id="actionHint">CLICK VÀO KHUNG THÀNH ĐỂ SÚT</p>
         </div>
@@ -212,17 +274,12 @@
 <script src="js/wallet.js"></script>
 <script src="js/penalty.js"></script>
 <script>
-    // Chặn Ctrl+Scroll zoom (desktop)
     window.addEventListener('wheel', function(e) {
         if (e.ctrlKey) e.preventDefault();
     }, { passive: false });
-
-    // Chặn pinch zoom (mobile/trackpad)
     window.addEventListener('touchmove', function(e) {
         if (e.touches.length > 1) e.preventDefault();
     }, { passive: false });
-
-    // Chặn Ctrl+Plus / Ctrl+Minus / Ctrl+0
     window.addEventListener('keydown', function(e) {
         if (e.ctrlKey && (e.key === '+' || e.key === '-' || e.key === '=' || e.key === '0')) {
             e.preventDefault();

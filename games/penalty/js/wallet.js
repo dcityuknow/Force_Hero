@@ -14,11 +14,12 @@ let walletAddress = null;
 let walletConnected = false;
 
 // ── DOM ─────────────────────────────────────────────────
-const walletBtn     = document.getElementById('walletBtn');
-const walletBtnText = document.getElementById('walletBtnText');
-const walletNetwork = document.getElementById('walletNetwork');
-const netDot        = document.getElementById('netDot');
-const netLabel      = document.getElementById('netLabel');
+const walletBtn        = document.getElementById('walletBtn');
+const walletBtnText    = document.getElementById('walletBtnText');
+const walletNetwork    = document.getElementById('walletNetwork');
+const netDot           = document.getElementById('netDot');
+const netLabel         = document.getElementById('netLabel');
+const disconnectBtn    = document.getElementById('disconnectBtn');
 
 // ── HELPERS ─────────────────────────────────────────────
 function shortAddr(addr) {
@@ -29,6 +30,7 @@ function setWalletUI(addr, onArc) {
     walletBtnText.textContent = shortAddr(addr);
     walletBtn.classList.add('connected');
     walletNetwork.style.display = 'flex';
+    if (disconnectBtn) disconnectBtn.style.display = 'inline-flex';
     if (onArc) {
         netDot.className = 'net-dot dot-green';
         netLabel.textContent = 'ARC Testnet';
@@ -42,8 +44,14 @@ function resetWalletUI() {
     walletBtnText.textContent = 'CONNECT WALLET';
     walletBtn.classList.remove('connected');
     walletNetwork.style.display = 'none';
+    if (disconnectBtn) disconnectBtn.style.display = 'none';
     walletAddress = null;
     walletConnected = false;
+}
+
+// ── DISCONNECT ───────────────────────────────────────────
+function disconnectWallet() {
+    resetWalletUI();
 }
 
 // ── SWITCH / ADD ARC TESTNET ─────────────────────────────
@@ -55,7 +63,6 @@ async function switchToArc() {
         });
         return true;
     } catch (err) {
-        // Chain not added yet → add it
         if (err.code === 4902 || err.code === -32603) {
             try {
                 await window.ethereum.request({
@@ -75,7 +82,6 @@ async function switchToArc() {
 
 // ── CONNECT ──────────────────────────────────────────────
 async function connectWallet() {
-    // Already connected → do nothing (or could disconnect)
     if (walletConnected) return;
 
     if (!window.ethereum) {
@@ -87,15 +93,12 @@ async function connectWallet() {
     walletBtnText.textContent = 'CONNECTING...';
 
     try {
-        // 1. Request accounts
         const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
         walletAddress = accounts[0];
         walletConnected = true;
 
-        // 2. Auto-switch to ARC Testnet
         const switched = await switchToArc();
 
-        // 3. Check current chain
         const chainId = await window.ethereum.request({ method: 'eth_chainId' });
         const onArc = chainId.toLowerCase() === ARC_TESTNET.chainId.toLowerCase();
 
@@ -129,7 +132,7 @@ if (window.ethereum) {
         }
     });
 
-    // Auto-reconnect if user already authorized
+    // Auto-reconnect nếu user đã authorize trước
     window.ethereum.request({ method: 'eth_accounts' }).then(accounts => {
         if (accounts.length > 0) {
             walletAddress = accounts[0];
