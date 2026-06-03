@@ -272,6 +272,23 @@
 
 </div>
 <script src="../../js/wallet.js"></script>
+<script>
+    // ── Ticket Guard ──────────────────────────────────────
+    (function() {
+        var tickets = parseInt(localStorage.getItem('smicgamehub_tickets') || '0', 10);
+        if (tickets < 1) {
+            alert('🎟️ Bạn cần ít nhất 1 ticket để chơi!\nHãy mua ticket ở Lobby.');
+            window.location.replace('../../index.html');
+        }
+        // Ticket đã được trừ bởi lobby (launchGame).
+        // Nếu user vào thẳng URL → trừ tại đây
+        var usedByLobby = sessionStorage.getItem('smic_ticket_spent');
+        if (!usedByLobby && tickets >= 1) {
+            localStorage.setItem('smicgamehub_tickets', (tickets - 1).toString());
+        }
+        sessionStorage.removeItem('smic_ticket_spent');
+    })();
+</script>
 <script src="js/penalty.js"></script>
 <script>
     window.addEventListener('wheel', function(e) {
