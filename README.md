@@ -1,4 +1,8 @@
-# SMIC GAME HUB – Hướng dẫn cài đặt
+# FORCE HERO – 
+**CONTRACT**
+```
+0x441f311f2074df4070ea6229ee33E2224353F1cb
+```
 
 ## 📁 Cấu trúc thư mục
 
@@ -51,12 +55,6 @@
         └── penalty/                  ← Âm thanh penalty
 ```
 
----
-
-## 🚀 Cách chạy
-
-Chỉ cần mở `index.html` trong trình duyệt.  
-Hoặc dùng Live Server (VS Code) trỏ vào thư mục gốc.
 
 ---
 
