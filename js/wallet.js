@@ -166,7 +166,8 @@ async function buyTickets(quantity) {
       params: [{
         from: walletAddress,
         to:   USDC_ADDRESS,
-        data: encodeApprove(TICKET_CONTRACT_ADDR, totalCost.toString())
+        data: encodeApprove(TICKET_CONTRACT_ADDR, totalCost.toString()),
+        gas:  '0x186A0'   // 100,000 – bypass eth_estimateGas failures
       }]
     });
 
@@ -181,7 +182,8 @@ async function buyTickets(quantity) {
       params: [{
         from: walletAddress,
         to:   TICKET_CONTRACT_ADDR,
-        data: encodeBuyTickets(quantity)
+        data: encodeBuyTickets(quantity),
+        gas:  '0x493E0'   // 300,000 – covers transferFrom + storage write
       }]
     });
 
@@ -235,7 +237,8 @@ async function useTicket() {
       params: [{
         from: walletAddress,
         to:   TICKET_CONTRACT_ADDR,
-        data: encodeUseTickets(1)
+        data: encodeUseTickets(1),
+        gas:  '0x186A0'   // 100,000
       }]
     });
     await waitForReceipt(txHash);
