@@ -1,173 +1,258 @@
-'use strict';
+// ============================================================
+//  wallet.js  –  ARC Testnet USDC Ticket System
+//  Chain ID : 5042002 (0x4cef52)
+//  USDC     : 0x3600000000000000000000000000000000000000  (6 decimals, native-ERC20)
+//  Treasury : 0x4cd1d1b157f943feb2bebf2d36770ac3346e1128
+// ============================================================
 
-// ── ARC TESTNET CONFIG ──────────────────────────────────
-const ARC_TESTNET = {
-    chainId:          '0x4CE052',
-    chainName:        'Arc Testnet',
-    nativeCurrency:   { name: 'USDC', symbol: 'USDC', decimals: 18 },
-    rpcUrls:          ['https://rpc.testnet.arc.network'],
-    blockExplorerUrls:['https://testnet.arcscan.app'],
-};
+const ARC_CHAIN_ID      = '0x4cef52';          // 5042002
+const ARC_RPC           = 'https://rpc.testnet.arc.network';
+const USDC_ADDRESS      = '0x3600000000000000000000000000000000000000';
+const TREASURY_ADDRESS  = '0x4cd1d1b157f943feb2bebf2d36770ac3346e1128';
+const USDC_DECIMALS     = 6;
+const TICKET_KEY        = 'smicgamehub_tickets';
 
-const LS_KEY = 'smic_wallet_connected'; // localStorage key
+// Minimal ERC-20 ABI (only transfer + balanceOf)
+const ERC20_ABI = [
+  { "type":"function","name":"transfer",
+    "inputs":[{"name":"to","type":"address"},{"name":"amount","type":"uint256"}],
+    "outputs":[{"name":"","type":"bool"}],"stateMutability":"nonpayable" },
+  { "type":"function","name":"balanceOf",
+    "inputs":[{"name":"account","type":"address"}],
+    "outputs":[{"name":"","type":"uint256"}],"stateMutability":"view" }
+];
 
-// ── STATE ───────────────────────────────────────────────
-let walletAddress   = null;
-let walletConnected = false;
+// ── State ──────────────────────────────────────────────────
+let walletAddress = null;
 
-// ── DOM ─────────────────────────────────────────────────
-const walletBtn     = document.getElementById('walletBtn');
-const walletBtnText = document.getElementById('walletBtnText');
-const walletNetwork = document.getElementById('walletNetwork');
-const netDot        = document.getElementById('netDot');
-const netLabel      = document.getElementById('netLabel');
-const disconnectBtn = document.getElementById('disconnectBtn');
-
-// ── HELPERS ─────────────────────────────────────────────
-function shortAddr(addr) {
-    return addr.slice(0, 6) + '...' + addr.slice(-4);
+// ── Ticket helpers ─────────────────────────────────────────
+function getTickets() {
+  return parseInt(localStorage.getItem(TICKET_KEY) || '0', 10);
+}
+function setTickets(n) {
+  localStorage.setItem(TICKET_KEY, Math.max(0, n).toString());
+  updateTicketUI();
+}
+function addTickets(n)    { setTickets(getTickets() + n); }
+function useTicket()      {
+  if (getTickets() < 1) return false;
+  setTickets(getTickets() - 1);
+  return true;
 }
 
-function setWalletUI(addr, onArc) {
-    walletAddress   = addr;
-    walletConnected = true;
-
-    walletBtnText.textContent = shortAddr(addr);
-    walletBtn.classList.add('connected');
-    walletNetwork.style.display = 'flex';
-    if (disconnectBtn) disconnectBtn.style.display = 'inline-flex';
-
-    if (onArc) {
-        netDot.className    = 'net-dot dot-green';
-        netLabel.textContent = 'ARC Testnet';
-    } else {
-        netDot.className    = 'net-dot dot-yellow';
-        netLabel.textContent = 'Wrong Network';
-    }
-
-    // Lưu trạng thái vào localStorage để đồng bộ giữa các trang
-    localStorage.setItem(LS_KEY, addr);
-}
-
-function resetWalletUI() {
-    walletAddress   = null;
-    walletConnected = false;
-
-    walletBtnText.textContent = 'CONNECT WALLET';
-    walletBtn.classList.remove('connected');
-    walletNetwork.style.display = 'none';
-    if (disconnectBtn) disconnectBtn.style.display = 'none';
-
-    // Xoá khỏi localStorage → các trang khác sẽ biết đã disconnect
-    localStorage.removeItem(LS_KEY);
-}
-
-// ── DISCONNECT ───────────────────────────────────────────
-function disconnectWallet() {
-    resetWalletUI();
-}
-
-// ── SWITCH / ADD ARC TESTNET ─────────────────────────────
-async function switchToArc() {
-    try {
-        await window.ethereum.request({
-            method: 'wallet_switchEthereumChain',
-            params: [{ chainId: ARC_TESTNET.chainId }],
-        });
-        return true;
-    } catch (err) {
-        if (err.code === 4902 || err.code === -32603) {
-            try {
-                await window.ethereum.request({
-                    method: 'wallet_addEthereumChain',
-                    params: [ARC_TESTNET],
-                });
-                return true;
-            } catch (addErr) {
-                console.error('Could not add ARC Testnet:', addErr);
-                return false;
-            }
-        }
-        console.error('Switch chain error:', err);
-        return false;
-    }
-}
-
-// ── CONNECT ──────────────────────────────────────────────
+// ── Wallet connection ──────────────────────────────────────
 async function connectWallet() {
-    if (walletConnected) return;
+  if (!window.ethereum) {
+    alert('Vui lòng cài MetaMask hoặc ví hỗ trợ ARC Testnet!');
+    return null;
+  }
+  try {
+    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+    walletAddress = accounts[0];
+    await switchToARC();
+    updateWalletUI();
+    return walletAddress;
+  } catch (e) {
+    console.error('Connect wallet error:', e);
+    return null;
+  }
+}
 
-    if (!window.ethereum) {
-        alert('Không tìm thấy ví EVM!\nVui lòng cài MetaMask hoặc ví tương thích EVM.');
-        return;
+async function switchToARC() {
+  try {
+    await window.ethereum.request({
+      method: 'wallet_switchEthereumChain',
+      params: [{ chainId: ARC_CHAIN_ID }]
+    });
+  } catch (switchError) {
+    // Chain chưa có trong ví → thêm mới
+    if (switchError.code === 4902) {
+      await window.ethereum.request({
+        method: 'wallet_addEthereumChain',
+        params: [{
+          chainId: ARC_CHAIN_ID,
+          chainName: 'ARC Testnet',
+          nativeCurrency: { name: 'USDC', symbol: 'USDC', decimals: 6 },
+          rpcUrls: [ARC_RPC],
+          blockExplorerUrls: ['https://testnet.arcscan.app']
+        }]
+      });
+    } else {
+      throw switchError;
     }
+  }
+}
 
-    walletBtn.disabled = true;
-    walletBtnText.textContent = 'CONNECTING...';
+// ── Buy tickets ────────────────────────────────────────────
+// Encode ERC-20 transfer(address,uint256) call data
+function encodeTransfer(to, amountWei) {
+  // Function selector: keccak256("transfer(address,uint256)") = 0xa9059cbb
+  const selector = 'a9059cbb';
+  // Pad address to 32 bytes
+  const paddedAddr = to.toLowerCase().replace('0x', '').padStart(64, '0');
+  // Pad amount to 32 bytes (hex)
+  const paddedAmt  = BigInt(amountWei).toString(16).padStart(64, '0');
+  return '0x' + selector + paddedAddr + paddedAmt;
+}
 
+async function buyTickets(quantity) {
+  if (!walletAddress) {
+    const addr = await connectWallet();
+    if (!addr) return false;
+  }
+
+  const amountWei = BigInt(quantity) * BigInt(10 ** USDC_DECIMALS); // 1 USDC per ticket
+
+  try {
+    const data = encodeTransfer(TREASURY_ADDRESS, amountWei.toString());
+
+    const txHash = await window.ethereum.request({
+      method: 'eth_sendTransaction',
+      params: [{
+        from:  walletAddress,
+        to:    USDC_ADDRESS,
+        data:  data,
+        // gas left to wallet to estimate
+      }]
+    });
+
+    showToast('⏳ Đang xử lý giao dịch…');
+
+    // Poll for receipt
+    await waitForReceipt(txHash);
+
+    addTickets(quantity);
+    showToast(`🎟️ Mua thành công ${quantity} ticket!`);
+    return true;
+  } catch (e) {
+    if (e.code === 4001) {
+      showToast('❌ Giao dịch bị huỷ.');
+    } else {
+      console.error('Buy ticket error:', e);
+      showToast('❌ Lỗi giao dịch: ' + (e.message || 'unknown'));
+    }
+    return false;
+  }
+}
+
+async function waitForReceipt(txHash, maxAttempts = 30) {
+  for (let i = 0; i < maxAttempts; i++) {
+    await sleep(2000);
     try {
-        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-        const switched  = await switchToArc();
-        const chainId   = await window.ethereum.request({ method: 'eth_chainId' });
-        const onArc     = chainId.toLowerCase() === ARC_TESTNET.chainId.toLowerCase();
-
-        setWalletUI(accounts[0], onArc && switched);
-    } catch (err) {
-        console.error('Connect wallet error:', err);
-        walletBtnText.textContent = 'CONNECT WALLET';
-    } finally {
-        walletBtn.disabled = false;
-    }
+      const receipt = await window.ethereum.request({
+        method: 'eth_getTransactionReceipt',
+        params: [txHash]
+      });
+      if (receipt && receipt.status) return receipt;
+      if (receipt && receipt.status === '0x0') throw new Error('Transaction reverted');
+    } catch (e) { /* keep polling */ }
+  }
+  throw new Error('Transaction timeout');
 }
 
-// ── LẮNG NGHE THAY ĐỔI CHAIN / ACCOUNT TỪ VÍ ────────────
-if (window.ethereum) {
-    window.ethereum.on('chainChanged', (chainId) => {
-        if (!walletAddress) return;
-        const onArc = chainId.toLowerCase() === ARC_TESTNET.chainId.toLowerCase();
-        setWalletUI(walletAddress, onArc);
-    });
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
-    window.ethereum.on('accountsChanged', (accounts) => {
-        if (accounts.length === 0) {
-            resetWalletUI();
-        } else {
-            window.ethereum.request({ method: 'eth_chainId' }).then(chainId => {
-                const onArc = chainId.toLowerCase() === ARC_TESTNET.chainId.toLowerCase();
-                setWalletUI(accounts[0], onArc);
-            });
-        }
-    });
-
-    // Khởi động: kiểm tra localStorage trước
-    const savedAddr = localStorage.getItem(LS_KEY);
-    if (savedAddr) {
-        // User đã connect trước đó → verify xem MetaMask vẫn còn authorize không
-        window.ethereum.request({ method: 'eth_accounts' }).then(accounts => {
-            if (accounts.length > 0 && accounts[0].toLowerCase() === savedAddr.toLowerCase()) {
-                window.ethereum.request({ method: 'eth_chainId' }).then(chainId => {
-                    const onArc = chainId.toLowerCase() === ARC_TESTNET.chainId.toLowerCase();
-                    setWalletUI(accounts[0], onArc);
-                });
-            } else {
-                // Không khớp hoặc MetaMask đã revoke → xoá
-                localStorage.removeItem(LS_KEY);
-            }
-        });
-    }
+// ── UI helpers ─────────────────────────────────────────────
+function updateWalletUI() {
+  const el = document.getElementById('wallet-address');
+  const btn = document.getElementById('wallet-btn');
+  if (!el || !btn) return;
+  if (walletAddress) {
+    const short = walletAddress.slice(0,6) + '…' + walletAddress.slice(-4);
+    el.textContent = short;
+    el.style.display = 'inline';
+    btn.textContent = '✅ Connected';
+    btn.classList.add('connected');
+  } else {
+    el.style.display = 'none';
+    btn.textContent = '🔗 Connect Wallet';
+    btn.classList.remove('connected');
+  }
 }
 
-// ── ĐỒNG BỘ DISCONNECT GIỮA CÁC TAB / TRANG ─────────────
-// Khi trang khác gọi localStorage.removeItem → trang này cũng reset UI
-window.addEventListener('storage', (e) => {
-    if (e.key !== LS_KEY) return;
-    if (e.newValue === null) {
-        // Đã bị disconnect từ tab/trang khác
-        walletAddress   = null;
-        walletConnected = false;
-        walletBtnText.textContent = 'CONNECT WALLET';
-        walletBtn.classList.remove('connected');
-        walletNetwork.style.display = 'none';
-        if (disconnectBtn) disconnectBtn.style.display = 'none';
+function updateTicketUI() {
+  const t = getTickets();
+  document.querySelectorAll('.ticket-count').forEach(el => {
+    el.textContent = t;
+  });
+  // Disable/enable play buttons
+  document.querySelectorAll('.card-play-btn').forEach(btn => {
+    if (t < 1) {
+      btn.classList.add('no-ticket');
+      btn.title = 'Bạn cần mua ticket để chơi';
+    } else {
+      btn.classList.remove('no-ticket');
+      btn.title = '';
     }
+  });
+}
+
+// Toast notification
+function showToast(msg) {
+  let toast = document.getElementById('arc-toast');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'arc-toast';
+    document.body.appendChild(toast);
+  }
+  toast.textContent = msg;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 3500);
+}
+
+// ── Modal open/close ───────────────────────────────────────
+function openBuyModal() {
+  if (!walletAddress) {
+    connectWallet().then(addr => { if (addr) openBuyModal(); });
+    return;
+  }
+  document.getElementById('buy-modal').classList.add('open');
+}
+function closeBuyModal() {
+  document.getElementById('buy-modal').classList.remove('open');
+}
+
+// ── Guard for game pages ───────────────────────────────────
+// Call this at the top of each game's JS/HTML
+function requireTicket(lobbyPath = '../../index.html') {
+  if (getTickets() < 1) {
+    alert('🎟️ Bạn cần ít nhất 1 ticket để chơi!\nHãy mua ticket ở Lobby.');
+    window.location.href = lobbyPath;
+    return false;
+  }
+  useTicket();
+  updateTicketUI();
+  return true;
+}
+
+// ── Init ───────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  updateWalletUI();
+  updateTicketUI();
+
+  // Re-connect if already authorized
+  if (window.ethereum) {
+    window.ethereum.request({ method: 'eth_accounts' }).then(accounts => {
+      if (accounts.length) {
+        walletAddress = accounts[0];
+        updateWalletUI();
+      }
+    });
+    window.ethereum.on('accountsChanged', accounts => {
+      walletAddress = accounts[0] || null;
+      updateWalletUI();
+    });
+  }
 });
+
+// ── Expose globals ─────────────────────────────────────────
+window.SmicWallet = {
+  connect: connectWallet,
+  buyTickets,
+  getTickets,
+  useTicket,
+  requireTicket,
+  openBuyModal,
+  closeBuyModal,
+  showToast
+};
