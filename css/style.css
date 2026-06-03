@@ -31,6 +31,10 @@ body {
 
 /* ── LOBBY CONTAINER ── */
 .lobby-container {
+    background-image: url('../assets/images/backgroundlobby.png');
+    background-size: contain;
+    background-position: center;
+    background-repeat: no-repeat;
     position: relative;
     z-index: 1;
     width: 100vw;
@@ -50,11 +54,7 @@ body {
     align-items: center;
     gap: 8px;
 }
-.logo-badge {
-    font-size: 3rem;
-    filter: drop-shadow(0 0 20px #ffd700);
-    animation: float 3s ease-in-out infinite;
-}
+
 @keyframes float {
     0%,100% { transform: translateY(0); }
     50%      { transform: translateY(-10px); }
