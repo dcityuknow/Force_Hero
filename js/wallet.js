@@ -16,9 +16,17 @@ const USDC_DECIMALS        = 6;
 // ── ABI encoders ───────────────────────────────────────────
 
 function encodeApprove(spender, amountWei) {
-  const selector   = '095ea7b3';
-  const paddedAddr = spender.toLowerCase().replace('0x', '').padStart(64, '0');
+  const selector = '095ea7b3';
+  
+  // Đảm bảo địa chỉ chỉ có 40 ký tự hex bằng cách xóa 0x và chuyển chữ thường
+  const cleanAddr = spender.toLowerCase().replace(/^0x/, '');
+  if (cleanAddr.length !== 42 && cleanAddr.length !== 40) {
+     console.error("Địa chỉ spender không hợp lệ!");
+  }
+  
+  const paddedAddr = cleanAddr.padStart(64, '0');
   const paddedAmt  = BigInt(amountWei).toString(16).padStart(64, '0');
+  
   return '0x' + selector + paddedAddr + paddedAmt;
 }
 
