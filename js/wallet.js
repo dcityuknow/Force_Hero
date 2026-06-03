@@ -371,7 +371,6 @@ async function buyTickets(quantity) {
         from: walletAddress,
         to:   USDC_ADDRESS,
         data: encodeApprove(TICKET_CONTRACT_ADDR, totalCost.toString()),
-        gas:  '0x186A0'
       }]
     });
 
@@ -386,7 +385,6 @@ async function buyTickets(quantity) {
         from: walletAddress,
         to:   TICKET_CONTRACT_ADDR,
         data: encodeBuyTickets(quantity),
-        gas:  '0x493E0'
       }]
     });
 
