@@ -15,10 +15,6 @@ const USDC_DECIMALS        = 6;
 
 // ── ABI encoders ───────────────────────────────────────────
 
-/**
- * Encode ERC-20 approve(address,uint256)
- * selector: keccak256("approve(address,uint256)") = 0x095ea7b3
- */
 function encodeApprove(spender, amountWei) {
   const selector   = '095ea7b3';
   const paddedAddr = spender.toLowerCase().replace('0x', '').padStart(64, '0');
@@ -26,34 +22,18 @@ function encodeApprove(spender, amountWei) {
   return '0x' + selector + paddedAddr + paddedAmt;
 }
 
-/**
- * Encode TicketSystem.buyTickets(uint256)
- * selector: keccak256("buyTickets(uint256)") = 0x27a29b4b
- */
 function encodeBuyTickets(quantity) {
   const selector = '27a29b4b';
   const paddedQty = BigInt(quantity).toString(16).padStart(64, '0');
   return '0x' + selector + paddedQty;
 }
 
-/**
- * Encode TicketSystem.useTickets(uint256)
- * selector: keccak256("useTickets(uint256)") = 0x8f3b9b1c
- *
- * NOTE: Add a useTickets(uint256) function to your contract if you want
- * the frontend to deduct tickets on-chain when a game starts.
- * selector: keccak256("useTickets(uint256)") = 0x8f3b9b1c
- */
 function encodeUseTickets(quantity) {
   const selector = '8f3b9b1c';
   const paddedQty = BigInt(quantity).toString(16).padStart(64, '0');
   return '0x' + selector + paddedQty;
 }
 
-/**
- * Encode userTickets(address) view call
- * selector: keccak256("userTickets(address)") = 0x83a26201
- */
 function encodeUserTickets(account) {
   const selector   = '83a26201';
   const paddedAddr = account.toLowerCase().replace('0x', '').padStart(64, '0');
@@ -61,76 +41,282 @@ function encodeUserTickets(account) {
 }
 
 // ── State ──────────────────────────────────────────────────
-let walletAddress = null;
+let walletAddress    = null;
+let activeProvider   = null;   // the EIP-1193 provider currently in use
 
-// ── On-chain ticket reads ──────────────────────────────────
+// ── Provider detection (supports multi-wallet environments) ──
 
 /**
- * Read userTickets(address) from the TicketSystem contract via eth_call.
- * Returns a Number (safe for ticket counts which won't exceed JS MAX_SAFE_INT).
+ * Collect all EVM-compatible providers available in the page.
+ * Handles: single window.ethereum, window.ethereum.providers array,
+ * and per-wallet globals (window.phantom.ethereum, window.coinbaseWalletExtension, etc.)
  */
-async function getTicketsOnChain(address) {
-  const addr = address || walletAddress;
-  if (!addr) return 0;
-  try {
-    const result = await window.ethereum.request({
-      method: 'eth_call',
-      params: [{
-        to:   TICKET_CONTRACT_ADDR,
-        data: encodeUserTickets(addr)
-      }, 'latest']
-    });
-    // result is a 32-byte hex string → parse as BigInt, then Number
-    return Number(BigInt(result));
-  } catch (e) {
-    console.error('getTicketsOnChain error:', e);
-    return 0;
+function detectProviders() {
+  const seen = new Set();
+  const list = [];
+
+  function add(provider, label) {
+    if (!provider || seen.has(provider)) return;
+    seen.add(provider);
+    list.push({ provider, label });
   }
+
+  // Standard: window.ethereum may already be an array proxy
+  if (window.ethereum) {
+    const providers = window.ethereum.providers;
+    if (Array.isArray(providers) && providers.length > 0) {
+      providers.forEach(p => {
+        const name = guessWalletName(p);
+        add(p, name);
+      });
+    } else {
+      add(window.ethereum, guessWalletName(window.ethereum));
+    }
+  }
+
+  // Phantom exposes its own Ethereum provider separately
+  if (window.phantom?.ethereum) add(window.phantom.ethereum, 'Phantom');
+
+  // Coinbase Wallet SDK
+  if (window.coinbaseWalletExtension) add(window.coinbaseWalletExtension, 'Coinbase Wallet');
+
+  // Brave Wallet
+  if (window.ethereum?.isBraveWallet) add(window.ethereum, 'Brave Wallet');
+
+  // Trust Wallet
+  if (window.trustwallet) add(window.trustwallet, 'Trust Wallet');
+
+  // OKX Wallet
+  if (window.okxwallet) add(window.okxwallet, 'OKX Wallet');
+
+  // Bitget Wallet
+  if (window.bitkeep?.ethereum) add(window.bitkeep.ethereum, 'Bitget Wallet');
+
+  // Rabby
+  if (window.rabby) add(window.rabby, 'Rabby');
+
+  return list;
 }
 
-/**
- * Convenience: fetch on-chain count and refresh the UI.
- */
-async function refreshTickets() {
-  const count = await getTicketsOnChain();
-  updateTicketUI(count);
-  return count;
+function guessWalletName(p) {
+  if (!p) return 'Unknown Wallet';
+  if (p.isPhantom)          return 'Phantom';
+  if (p.isMetaMask)         return 'MetaMask';
+  if (p.isCoinbaseWallet)   return 'Coinbase Wallet';
+  if (p.isBraveWallet)      return 'Brave Wallet';
+  if (p.isTrust)            return 'Trust Wallet';
+  if (p.isOKExWallet || p.isOkxWallet) return 'OKX Wallet';
+  if (p.isBitKeep)          return 'Bitget Wallet';
+  if (p.isRabby)            return 'Rabby';
+  if (p.isTokenPocket)      return 'TokenPocket';
+  if (p.isImToken)          return 'imToken';
+  return 'EVM Wallet';
+}
+
+// ── Wallet picker modal ────────────────────────────────────
+
+function createWalletPickerModal() {
+  if (document.getElementById('wallet-picker-modal')) return;
+
+  const overlay = document.createElement('div');
+  overlay.id = 'wallet-picker-modal';
+  overlay.innerHTML = `
+    <div id="wallet-picker-box">
+      <div id="wallet-picker-header">
+        <span>Chọn ví của bạn</span>
+        <button id="wallet-picker-close" onclick="closeWalletPicker()">✕</button>
+      </div>
+      <div id="wallet-picker-list"></div>
+    </div>
+  `;
+  overlay.addEventListener('click', e => { if (e.target === overlay) closeWalletPicker(); });
+
+  // Inline styles so the modal works without extra CSS file
+  const style = document.createElement('style');
+  style.textContent = `
+    #wallet-picker-modal {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,.55); z-index: 99999;
+      align-items: center; justify-content: center;
+    }
+    #wallet-picker-modal.open { display: flex; }
+    #wallet-picker-box {
+      background: #1a1a2e; border: 1px solid #444; border-radius: 16px;
+      padding: 24px; min-width: 320px; max-width: 90vw;
+      box-shadow: 0 8px 40px rgba(0,0,0,.6);
+    }
+    #wallet-picker-header {
+      display: flex; justify-content: space-between; align-items: center;
+      color: #fff; font-size: 18px; font-weight: 700; margin-bottom: 16px;
+    }
+    #wallet-picker-close {
+      background: none; border: none; color: #aaa; font-size: 20px;
+      cursor: pointer; line-height: 1;
+    }
+    #wallet-picker-list { display: flex; flex-direction: column; gap: 10px; }
+    .wallet-picker-item {
+      display: flex; align-items: center; gap: 12px;
+      background: #252547; border: 1px solid #555; border-radius: 12px;
+      padding: 12px 16px; cursor: pointer; color: #fff;
+      font-size: 15px; font-weight: 500; transition: background .15s;
+    }
+    .wallet-picker-item:hover { background: #2e2e60; border-color: #7c6af7; }
+    .wallet-picker-item span.wpi-icon { font-size: 24px; }
+    #wallet-picker-no-wallet {
+      color: #bbb; text-align: center; font-size: 14px; padding: 8px 0;
+    }
+    #wallet-picker-no-wallet a { color: #7c6af7; }
+  `;
+  document.head.appendChild(style);
+  document.body.appendChild(overlay);
+}
+
+function walletIcon(name) {
+  const map = {
+    'MetaMask':       '🦊',
+    'Phantom':        '👻',
+    'Coinbase Wallet':'🔵',
+    'Brave Wallet':   '🦁',
+    'Trust Wallet':   '🛡️',
+    'OKX Wallet':     '⭕',
+    'Bitget Wallet':  '💎',
+    'Rabby':          '🐇',
+    'TokenPocket':    '📱',
+    'imToken':        '🔑',
+    'EVM Wallet':     '💼',
+  };
+  return map[name] || '💼';
+}
+
+function openWalletPicker() {
+  createWalletPickerModal();
+  const modal = document.getElementById('wallet-picker-modal');
+  const list  = document.getElementById('wallet-picker-list');
+  list.innerHTML = '';
+
+  const providers = detectProviders();
+
+  if (providers.length === 0) {
+    list.innerHTML = `<div id="wallet-picker-no-wallet">
+      Không tìm thấy ví EVM nào.<br>
+      <a href="https://metamask.io" target="_blank">Cài MetaMask</a> hoặc ví EVM khác.
+    </div>`;
+  } else {
+    providers.forEach(({ provider, label }) => {
+      const item = document.createElement('div');
+      item.className = 'wallet-picker-item';
+      item.innerHTML = `<span class="wpi-icon">${walletIcon(label)}</span><span>${label}</span>`;
+      item.addEventListener('click', () => {
+        closeWalletPicker();
+        connectWithProvider(provider);
+      });
+      list.appendChild(item);
+    });
+  }
+
+  modal.classList.add('open');
+}
+
+function closeWalletPicker() {
+  const modal = document.getElementById('wallet-picker-modal');
+  if (modal) modal.classList.remove('open');
 }
 
 // ── Wallet connection ──────────────────────────────────────
 
+/**
+ * Connect wallet:
+ * - If multiple providers detected → show picker modal
+ * - If exactly one provider → connect directly
+ * - If none → prompt install
+ */
 async function connectWallet() {
-  if (!window.ethereum) {
-    alert('Vui lòng cài MetaMask hoặc ví hỗ trợ ARC Testnet!');
+  const providers = detectProviders();
+
+  if (providers.length === 0) {
+    alert('Không tìm thấy ví EVM nào.\nVui lòng cài MetaMask hoặc ví EVM khác!');
     return null;
   }
+
+  if (providers.length === 1) {
+    return connectWithProvider(providers[0].provider);
+  }
+
+  // Multiple wallets → show picker
+  openWalletPicker();
+  return null; // connectWithProvider will be called from picker
+}
+
+async function connectWithProvider(provider) {
   try {
-    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+    activeProvider = provider;
+    // Make the chosen provider the global one for subsequent calls
+    window.ethereum = provider;
+
+    const accounts = await provider.request({ method: 'eth_requestAccounts' });
     walletAddress = accounts[0];
+
+    // Always switch to ARC network immediately after connecting
     await switchToARC();
+
     updateWalletUI();
     await refreshTickets();
+    attachProviderEvents(provider);
     return walletAddress;
   } catch (e) {
     console.error('Connect wallet error:', e);
+    if (e.code !== 4001) showToast('❌ Lỗi kết nối ví: ' + (e.message || 'unknown'));
     return null;
   }
 }
 
+function attachProviderEvents(provider) {
+  // Remove old listeners if any (best-effort)
+  try { provider.removeAllListeners?.('accountsChanged'); } catch (_) {}
+  try { provider.removeAllListeners?.('chainChanged'); } catch (_) {}
+
+  provider.on('accountsChanged', async accounts => {
+    walletAddress = accounts[0] || null;
+    updateWalletUI();
+    if (walletAddress) {
+      await refreshTickets();
+    } else {
+      updateTicketUI(0);
+    }
+  });
+
+  provider.on('chainChanged', () => window.location.reload());
+}
+
+// ── Disconnect wallet ──────────────────────────────────────
+
+function disconnectWallet() {
+  walletAddress  = null;
+  activeProvider = null;
+  updateWalletUI();
+  updateTicketUI(0);
+  showToast('🔌 Đã ngắt kết nối ví.');
+}
+
+// ── Switch network ─────────────────────────────────────────
+
 async function switchToARC() {
+  const provider = activeProvider || window.ethereum;
+  if (!provider) return;
+
   try {
-    await window.ethereum.request({
+    await provider.request({
       method: 'wallet_switchEthereumChain',
       params: [{ chainId: ARC_CHAIN_ID }]
     });
   } catch (switchError) {
     if (switchError.code === 4902) {
-      await window.ethereum.request({
+      await provider.request({
         method: 'wallet_addEthereumChain',
         params: [{
           chainId: ARC_CHAIN_ID,
           chainName: 'ARC Testnet',
-          nativeCurrency: { name: 'USDC', symbol: 'USDC', decimals: 18 }, // MetaMask requires 18
+          nativeCurrency: { name: 'USDC', symbol: 'USDC', decimals: 18 },
           rpcUrls: [ARC_RPC],
           blockExplorerUrls: ['https://testnet.arcscan.app']
         }]
@@ -141,33 +327,51 @@ async function switchToARC() {
   }
 }
 
+// ── On-chain ticket reads ──────────────────────────────────
+
+async function getTicketsOnChain(address) {
+  const addr = address || walletAddress;
+  if (!addr) return 0;
+  const provider = activeProvider || window.ethereum;
+  if (!provider) return 0;
+  try {
+    const result = await provider.request({
+      method: 'eth_call',
+      params: [{ to: TICKET_CONTRACT_ADDR, data: encodeUserTickets(addr) }, 'latest']
+    });
+    return Number(BigInt(result));
+  } catch (e) {
+    console.error('getTicketsOnChain error:', e);
+    return 0;
+  }
+}
+
+async function refreshTickets() {
+  const count = await getTicketsOnChain();
+  updateTicketUI(count);
+  return count;
+}
+
 // ── Buy tickets (approve → buyTickets) ────────────────────
 
-/**
- * Two-step on-chain flow:
- *  1. approve(TicketSystem, totalCost) on the USDC contract
- *  2. buyTickets(quantity)             on the TicketSystem contract
- *
- * Both transactions are confirmed before proceeding.
- */
 async function buyTickets(quantity) {
   if (!walletAddress) {
     const addr = await connectWallet();
     if (!addr) return false;
   }
 
-  const totalCost = BigInt(quantity) * BigInt(10 ** USDC_DECIMALS); // 1 USDC each
+  const provider  = activeProvider || window.ethereum;
+  const totalCost = BigInt(quantity) * BigInt(10 ** USDC_DECIMALS);
 
   try {
-    // ── Step 1: Approve ──────────────────────────────────
     showToast('🔐 Bước 1/2: Phê duyệt USDC…');
-    const approveTx = await window.ethereum.request({
+    const approveTx = await provider.request({
       method: 'eth_sendTransaction',
       params: [{
         from: walletAddress,
         to:   USDC_ADDRESS,
         data: encodeApprove(TICKET_CONTRACT_ADDR, totalCost.toString()),
-        gas:  '0x186A0'   // 100,000 – bypass eth_estimateGas failures
+        gas:  '0x186A0'
       }]
     });
 
@@ -175,15 +379,14 @@ async function buyTickets(quantity) {
     await waitForReceipt(approveTx);
     showToast('✅ Approve thành công!');
 
-    // ── Step 2: buyTickets ───────────────────────────────
     showToast('🎟️ Bước 2/2: Mua vé on-chain…');
-    const buyTx = await window.ethereum.request({
+    const buyTx = await provider.request({
       method: 'eth_sendTransaction',
       params: [{
         from: walletAddress,
         to:   TICKET_CONTRACT_ADDR,
         data: encodeBuyTickets(quantity),
-        gas:  '0x493E0'   // 300,000 – covers transferFrom + storage write
+        gas:  '0x493E0'
       }]
     });
 
@@ -206,39 +409,22 @@ async function buyTickets(quantity) {
 }
 
 // ── Use ticket (on-chain deduction) ───────────────────────
-/**
- * Calls useTickets(1) on the contract.
- *
- * IMPORTANT: Your current TicketSystem contract does NOT have a useTickets()
- * function. You have two options:
- *
- *  Option A (Recommended) – Add to your contract:
- *    function useTickets(uint256 quantity) external {
- *        require(userTickets[msg.sender] >= quantity, "Not enough tickets");
- *        userTickets[msg.sender] -= quantity;
- *    }
- *    Then re-deploy and update TICKET_CONTRACT_ADDR above.
- *
- *  Option B – Deduct only inside game server / backend (off-chain).
- *    In this case, replace the body of useTicket() below with your API call
- *    and remove the on-chain tx entirely.
- *
- * The selector used here matches Option A's function signature.
- */
+
 async function useTicket() {
   if (!walletAddress) return false;
 
-  const current = await getTicketsOnChain();
+  const provider = activeProvider || window.ethereum;
+  const current  = await getTicketsOnChain();
   if (current < 1) return false;
 
   try {
-    const txHash = await window.ethereum.request({
+    const txHash = await provider.request({
       method: 'eth_sendTransaction',
       params: [{
         from: walletAddress,
         to:   TICKET_CONTRACT_ADDR,
         data: encodeUseTickets(1),
-        gas:  '0x186A0'   // 100,000
+        gas:  '0x186A0'
       }]
     });
     await waitForReceipt(txHash);
@@ -254,10 +440,11 @@ async function useTicket() {
 // ── Transaction receipt polling ────────────────────────────
 
 async function waitForReceipt(txHash, maxAttempts = 30) {
+  const provider = activeProvider || window.ethereum;
   for (let i = 0; i < maxAttempts; i++) {
     await sleep(2000);
     try {
-      const receipt = await window.ethereum.request({
+      const receipt = await provider.request({
         method: 'eth_getTransactionReceipt',
         params: [txHash]
       });
@@ -267,7 +454,6 @@ async function waitForReceipt(txHash, maxAttempts = 30) {
       }
     } catch (e) {
       if (e.message.includes('reverted')) throw e;
-      // keep polling on network errors
     }
   }
   throw new Error('Transaction timeout – kiểm tra explorer: https://testnet.arcscan.app');
@@ -278,20 +464,56 @@ function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 // ── UI helpers ─────────────────────────────────────────────
 
 function updateWalletUI() {
-  const el  = document.getElementById('wallet-address');
-  const btn = document.getElementById('wallet-btn');
-  if (!el || !btn) return;
+  const addrEl      = document.getElementById('wallet-address');
+  const connectBtn  = document.getElementById('wallet-btn');
+  const disconnectBtn = document.getElementById('wallet-disconnect-btn');
+
   if (walletAddress) {
     const short = walletAddress.slice(0, 6) + '…' + walletAddress.slice(-4);
-    el.textContent  = short;
-    el.style.display = 'inline';
-    btn.textContent  = '✅ Connected';
-    btn.classList.add('connected');
+
+    if (addrEl) {
+      addrEl.textContent  = short;
+      addrEl.style.display = 'inline';
+    }
+    if (connectBtn) {
+      connectBtn.textContent = '✅ Connected';
+      connectBtn.classList.add('connected');
+    }
+    // Show disconnect button if it exists; otherwise inject one next to connect btn
+    if (disconnectBtn) {
+      disconnectBtn.style.display = 'inline-block';
+    } else if (connectBtn) {
+      _ensureDisconnectBtn(connectBtn);
+    }
   } else {
-    el.style.display = 'none';
-    btn.textContent  = '🔗 Connect Wallet';
-    btn.classList.remove('connected');
+    if (addrEl) addrEl.style.display = 'none';
+    if (connectBtn) {
+      connectBtn.textContent = '🔗 Connect Wallet';
+      connectBtn.classList.remove('connected');
+    }
+    if (disconnectBtn) disconnectBtn.style.display = 'none';
+    const injected = document.getElementById('wallet-disconnect-btn');
+    if (injected) injected.style.display = 'none';
   }
+}
+
+/**
+ * Auto-inject a disconnect button right after the connect button
+ * if the HTML does not already have one with id="wallet-disconnect-btn".
+ */
+function _ensureDisconnectBtn(connectBtn) {
+  if (document.getElementById('wallet-disconnect-btn')) return;
+  const btn = document.createElement('button');
+  btn.id        = 'wallet-disconnect-btn';
+  btn.textContent = '🔌 Ngắt kết nối';
+  btn.onclick   = disconnectWallet;
+  // Minimal inline style so it works without extra CSS
+  btn.style.cssText = `
+    margin-left: 8px; padding: 6px 14px; border-radius: 8px;
+    background: #c0392b; color: #fff; border: none; cursor: pointer;
+    font-size: 13px; font-weight: 600;
+  `;
+  connectBtn.parentNode.insertBefore(btn, connectBtn.nextSibling);
 }
 
 function updateTicketUI(count) {
@@ -336,10 +558,7 @@ function closeBuyModal() {
 }
 
 // ── Game guard ─────────────────────────────────────────────
-/**
- * Call at the top of each game page.
- * Checks on-chain balance, then calls useTickets(1) before allowing play.
- */
+
 async function requireTicket(lobbyPath = '../../index.html') {
   if (!walletAddress) {
     alert('🔗 Vui lòng kết nối ví trước!');
@@ -367,40 +586,40 @@ async function requireTicket(lobbyPath = '../../index.html') {
 
 window.addEventListener('DOMContentLoaded', () => {
   updateWalletUI();
-  updateTicketUI(0); // show 0 until wallet connects
+  updateTicketUI(0);
 
-  if (window.ethereum) {
-    window.ethereum.request({ method: 'eth_accounts' }).then(async accounts => {
+  // Try to restore previously connected wallet (if provider available)
+  const providers = detectProviders();
+  if (providers.length > 0) {
+    const firstProvider = providers[0].provider;
+    firstProvider.request({ method: 'eth_accounts' }).then(async accounts => {
       if (accounts.length) {
-        walletAddress = accounts[0];
+        walletAddress  = accounts[0];
+        activeProvider = firstProvider;
+        window.ethereum = firstProvider;
+        // Auto switch to ARC for already-connected wallets
+        try { await switchToARC(); } catch (_) {}
         updateWalletUI();
         await refreshTickets();
+        attachProviderEvents(firstProvider);
       }
-    });
-
-    window.ethereum.on('accountsChanged', async accounts => {
-      walletAddress = accounts[0] || null;
-      updateWalletUI();
-      if (walletAddress) {
-        await refreshTickets();
-      } else {
-        updateTicketUI(0);
-      }
-    });
-
-    window.ethereum.on('chainChanged', () => window.location.reload());
+    }).catch(() => {});
   }
 });
 
 // ── Expose globals ─────────────────────────────────────────
 window.SmicWallet = {
-  connect:       connectWallet,
+  connect:          connectWallet,
+  disconnect:       disconnectWallet,
   buyTickets,
-  getTickets:    getTicketsOnChain,   // async now – returns Promise<number>
+  getTickets:       getTicketsOnChain,
   useTicket,
   requireTicket,
   refreshTickets,
   openBuyModal,
   closeBuyModal,
-  showToast
+  showToast,
+  openWalletPicker,
+  closeWalletPicker,
+  switchToARC
 };
