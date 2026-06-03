@@ -5,56 +5,142 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SMIC GAME HUB</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Nunito:wght@700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Nunito:wght@700;900&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
+    <style>
+        /* ── Wallet UI shared styles ── */
+        .wallet-wrap {
+            position: fixed;
+            top: 12px;
+            right: 14px;
+            z-index: 999;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 5px;
+        }
+        .wallet-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .wallet-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 14px;
+            border: 2px solid rgba(255,255,255,0.25);
+            border-radius: 999px;
+            background: rgba(0,0,0,0.55);
+            color: #fff;
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 0.82rem;
+            font-weight: 700;
+            letter-spacing: .05em;
+            cursor: pointer;
+            transition: border-color .2s, background .2s;
+            backdrop-filter: blur(6px);
+        }
+        .wallet-btn:hover { border-color: rgba(255,255,255,.6); }
+        .wallet-btn.connected { border-color: #4ade80; background: rgba(0,0,0,.65); }
+        .wallet-icon { font-size: 1rem; }
+        .disconnect-btn {
+            display: none;
+            align-items: center;
+            gap: 5px;
+            padding: 5px 11px;
+            border: 2px solid rgba(248,113,113,.5);
+            border-radius: 999px;
+            background: rgba(0,0,0,.5);
+            color: #f87171;
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 0.78rem;
+            font-weight: 700;
+            letter-spacing: .04em;
+            cursor: pointer;
+            transition: border-color .2s, background .2s;
+            backdrop-filter: blur(6px);
+        }
+        .disconnect-btn:hover { border-color: #f87171; background: rgba(248,113,113,.15); }
+        .wallet-network {
+            display: none;
+            align-items: center;
+            gap: 5px;
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 0.72rem;
+            font-weight: 600;
+            color: rgba(255,255,255,.7);
+            padding-right: 4px;
+        }
+        .net-dot { width: 7px; height: 7px; border-radius: 50%; }
+        .dot-green  { background: #4ade80; box-shadow: 0 0 6px #4ade80; }
+        .dot-yellow { background: #facc15; box-shadow: 0 0 6px #facc15; }
+    </style>
 </head>
 <body>
-    <div class="lobby-container">
-        <div class="stars" id="stars"></div>
+<div class="lobby-container">
+    <div class="stars" id="stars"></div>
 
-        <header class="lobby-header">
-            <div class="logo-badge">🎮</div>
-            <h1 class="lobby-title">SMIC<span>GAME</span></h1>
-            <p class="lobby-sub">Choose your game and let's play!</p>
-        </header>
-
-        <div class="game-grid">
-            <!-- TUG OF WAR -->
-            <div class="game-card" id="card-tug" onclick="launchGame('games/tugofwar/tugofwar.html')">
-                <div class="card-glow glow-red"></div>
-                <div class="card-icon">🪢</div>
-                <div class="card-badge">MULTIPLAYER</div>
-                <h2 class="card-title">TUG OF WAR</h2>
-                <p class="card-desc">Type arrow sequences to pull the rope.<br>Reach Level 9 for power items!</p>
-                <div class="card-tags">
-                    <span class="tag">Keyboard</span>
-                    <span class="tag">VS Bot</span>
-                    <span class="tag">Level 1–9</span>
-                </div>
-                <div class="card-play-btn">PLAY NOW →</div>
-            </div>
-
-            <!-- PENALTY SHOOTOUT -->
-            <div class="game-card" id="card-penalty" onclick="launchGame('games/penalty/penalty.html')">
-                <div class="card-glow glow-green"></div>
-                <div class="card-icon">⚽</div>
-                <div class="card-badge new-badge">NEW</div>
-                <h2 class="card-title">PENALTY<br>SHOOTOUT</h2>
-                <p class="card-desc">Choose to shoot or save.<br>5 rounds — who wins the cup?</p>
-                <div class="card-tags">
-                    <span class="tag">Shooter</span>
-                    <span class="tag">Goalkeeper</span>
-                    <span class="tag">VS Bot</span>
-                </div>
-                <div class="card-play-btn">PLAY NOW →</div>
-            </div>
+    <!-- WALLET CONNECT / DISCONNECT -->
+    <div class="wallet-wrap" id="walletWrap">
+        <div class="wallet-row">
+            <button class="wallet-btn" id="walletBtn" onclick="connectWallet()">
+                <span class="wallet-icon">🦊</span>
+                <span id="walletBtnText">CONNECT WALLET</span>
+            </button>
+            <button class="disconnect-btn" id="disconnectBtn" onclick="disconnectWallet()">✕ DISCONNECT</button>
         </div>
-
-        <footer class="lobby-footer">
-            <span>SMIC GAME HUB • 2025</span>
-        </footer>
+        <div class="wallet-network" id="walletNetwork">
+            <span class="net-dot" id="netDot"></span>
+            <span id="netLabel">ARC Testnet</span>
+        </div>
     </div>
 
-    <script src="js/main.js"></script>
+    <header class="lobby-header">
+        <div class="logo-badge">🎮</div>
+        <h1 class="lobby-title">SMIC<span>GAME</span></h1>
+        <p class="lobby-sub">Choose your game and let's play!</p>
+    </header>
+
+    <div class="game-grid">
+        <!-- TUG OF WAR -->
+        <div class="game-card" id="card-tug" onclick="launchGame('games/tugofwar/tugofwar.html')">
+            <div class="card-glow glow-red"></div>
+            <div class="card-icon">🪢</div>
+            <div class="card-badge">MULTIPLAYER</div>
+            <h2 class="card-title">TUG OF WAR</h2>
+            <p class="card-desc">Type arrow sequences to pull the rope.<br>Reach Level 9 for power items!</p>
+            <div class="card-tags">
+                <span class="tag">Keyboard</span>
+                <span class="tag">VS Bot</span>
+                <span class="tag">Level 1–9</span>
+            </div>
+            <div class="card-play-btn">PLAY NOW →</div>
+        </div>
+
+        <!-- PENALTY SHOOTOUT -->
+        <div class="game-card" id="card-penalty" onclick="launchGame('games/penalty/penalty.html')">
+            <div class="card-glow glow-green"></div>
+            <div class="card-icon">⚽</div>
+            <div class="card-badge new-badge">NEW</div>
+            <h2 class="card-title">PENALTY<br>SHOOTOUT</h2>
+            <p class="card-desc">Choose to shoot or save.<br>5 rounds — who wins the cup?</p>
+            <div class="card-tags">
+                <span class="tag">Shooter</span>
+                <span class="tag">Goalkeeper</span>
+                <span class="tag">VS Bot</span>
+            </div>
+            <div class="card-play-btn">PLAY NOW →</div>
+        </div>
+    </div>
+
+    <footer class="lobby-footer">
+        <span>SMIC GAME HUB • 2025</span>
+    </footer>
+</div>
+
+<!-- wallet.js dùng path tương đối từ root -->
+<script src="js/wallet.js"></script>
+<script src="js/main.js"></script>
 </body>
 </html>
