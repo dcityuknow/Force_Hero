@@ -3,14 +3,14 @@
 //  Chain ID    : 5042002 (0x4cef52)
 //  USDC        : 0x3600000000000000000000000000000000000000  (6 decimals)
 //  Treasury    : 0x4cd1d1b157f943feb2bebf2d36770ac3346e1128
-//  TicketSystem: 0xDb930D73Bd515F5cb03f5A505C66d9906852186a
+//  TicketSystem: 0x4698fa79738754B360E9a203E3e416CC8F680c92
 // ============================================================
 
 const ARC_CHAIN_ID         = '0x4cef52';
 const ARC_RPC              = 'https://rpc.testnet.arc.network';
 const USDC_ADDRESS         = '0x3600000000000000000000000000000000000000';
 const TREASURY_ADDRESS     = '0x4cd1d1b157f943feb2bebf2d36770ac3346e1128';
-const TICKET_CONTRACT_ADDR = '0xDb930D73Bd515F5cb03f5A505C66d9906852186a';
+const TICKET_CONTRACT_ADDR = '0x4698fa79738754B360E9a203E3e416CC8F680c92';
 const USDC_DECIMALS        = 6;
 
 // ── ABI encoders ───────────────────────────────────────────
