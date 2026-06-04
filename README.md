@@ -56,32 +56,5 @@
 ```
 
 
----
 
-## 📦 Di chuyển ảnh cũ sang cấu trúc mới
 
-Ảnh cũ nằm ở `assets/images/` → **di chuyển vào subfolder** tương ứng:
-
-| Ảnh cũ                            | Vị trí mới                              |
-|-----------------------------------|-----------------------------------------|
-| `assets/images/background0.png`   | Giữ nguyên (dùng chung)                 |
-| `assets/images/background1.png`   | `assets/images/tugofwar/background1.png`|
-| `assets/images/background2.png`   | `assets/images/tugofwar/background2.png`|
-| `assets/images/background3.png`   | `assets/images/tugofwar/background3.png`|
-| `assets/images/team_left*.png`    | `assets/images/tugofwar/team_left*.png` |
-| `assets/images/team_right*.png`   | `assets/images/tugofwar/team_right*.png`|
-| `assets/images/character_center.png` | `assets/images/tugofwar/`            |
-| `assets/images/rope.png`          | `assets/images/tugofwar/rope.png`       |
-| `assets/images/flag.png`          | `assets/images/tugofwar/flag.png`       |
-| `assets/images/dust.png`          | `assets/images/tugofwar/dust.png`       |
-| `assets/images/ketqua.png`        | `assets/images/tugofwar/ketqua.png`     |
-| `assets/images/item.png`          | `assets/images/tugofwar/item.png`       |
-
----
-
-## ➕ Thêm game mới
-
-1. Tạo folder `games/tengame/`
-2. Thêm `tengame.html`, `css/tengame.css`, `js/tengame.js`
-3. Thêm ảnh riêng vào `assets/images/tengame/`
-4. Thêm card vào `index.html` (copy 1 card có sẵn, đổi màu + text)
