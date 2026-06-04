@@ -1,10 +1,9 @@
-# FORCE HERO – 
 **CONTRACT**
 ```
 0x74708fd724d84C614383ffA494FFBfbFC176e507
 ```
 
-# 🎮 Force Hero - SMIC Game Hub
+# 🎮 Force Hero 
 
 **Nền tảng game Web3 trên Arc Testnet** – Kết hợp giải trí và blockchain.
 
