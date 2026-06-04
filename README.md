@@ -7,7 +7,6 @@
 
 **Nền tảng game Web3 trên Arc Testnet** – Kết hợp giải trí và blockchain.
 
-![Force Hero Banner](https://force-hero-bice.vercel.app/assets/images/background0.png)
 
 ## ✨ Giới thiệu
 
