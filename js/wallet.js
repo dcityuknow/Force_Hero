@@ -31,7 +31,7 @@ function encodeApprove(spender, amountWei) {
 }
 
 function encodeBuyTickets(quantity) {
-  const selector = '27a29b4b';
+  const selector = '8f7a3d79';
   const paddedQty = BigInt(quantity).toString(16).padStart(64, '0');
   return '0x' + selector + paddedQty;
 }
