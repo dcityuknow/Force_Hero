@@ -4,6 +4,26 @@
 0x74708fd724d84C614383ffA494FFBfbFC176e507
 ```
 
+# 🎮 Force Hero - SMIC Game Hub
+
+**Nền tảng game Web3 trên Arc Testnet** – Kết hợp giải trí và blockchain.
+
+![Force Hero Banner](https://force-hero-bice.vercel.app/assets/images/background0.png)
+
+## ✨ Giới thiệu
+
+Force Hero là **Game Hub** đa thể loại, cho phép người chơi:
+- Kết nối ví Arc Testnet
+- Mua Ticket bằng USDC để chơi game
+- Tham gia các mini-game (Kéo co, Penalty, ...)
+- Sắp tới: Bảng xếp hạng on-chain, NFT Reward, Tournament
+
+**Live Demo**: [force-hero-bice.vercel.app](https://force-hero-bice.vercel.app)
+
+---
+
+## 📁 Cấu trúc thư mục dự án (Phiên bản hiện tại)
+
 ## 📁 Cấu trúc thư mục
 
 ```
