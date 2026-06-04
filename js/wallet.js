@@ -393,6 +393,7 @@ async function buyTickets(quantity) {
         from: walletAddress,
         to:   TICKET_CONTRACT_ADDR,
         data: encodeBuyTickets(quantity),
+	gas: '0xC3500'        // ≈ 800.000 gas
       }]
     });
 
