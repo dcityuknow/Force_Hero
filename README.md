@@ -187,6 +187,15 @@ Kiểm tra Nginx:
 sudo systemctl status nginx
 ```
 
+cài Certbot.
+```
+sudo apt update
+sudo apt install certbot python3-certbot-nginx -y
+```
+
+
+
+
 Tạo file cấu hình Nginx cho subdomain
 ```
 sudo nano /etc/nginx/sites-available/force-hero-api
