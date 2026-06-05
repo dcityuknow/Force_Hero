@@ -108,6 +108,15 @@ npm install express ethers dotenv cors
 nano .env
 ```
 
+điền vào tệp .env nội dung sau : 
+```
+SIGNER_PRIVATE_KEY=0x_private_key_ví_signer_của_bạn
+REWARD_CONTRACT=0x_địa_chỉ_contract_sau_khi_deploy
+ARC_CHAIN_ID=5042002
+PORT=3001
+```
+
+
 
 
 
