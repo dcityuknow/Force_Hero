@@ -174,6 +174,8 @@ nano ~/Force_Hero/js/wallet.js
 
 **5. Tạo backend với https**
 
+trỏ domain về địa chỉ IP đang build backend của bạn , ví dụ : 
+https://force-hero-api.kengsiro.com/
 Cài Nginx
 ```
 sudo apt update
