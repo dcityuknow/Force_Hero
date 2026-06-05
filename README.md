@@ -141,7 +141,12 @@ input :
 ✅ Chain ID:       5042002
 🚀 Reward backend running on http://localhost:3001
 ```
+Test thử backend hoạt động chưa
+```
+http://46.225.230.122:3001/health
+```
 
+output : {"ok":true,"signer":"0x78962ad7..."}
 
 
 
