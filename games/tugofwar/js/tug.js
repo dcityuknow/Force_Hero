@@ -499,18 +499,87 @@ function checkGameOver() {
         
         if (charCenter) charCenter.style.opacity = '0';
 
+        let playerWon = false;
         if (ropePosition < 0) {
             winnerText.innerText = "🎉 LEFT TEAM WIN!";
             winnerText.style.color = "#d50000";
+            playerWon = (userTeam === 'left');
         } else {
             winnerText.innerText = "🎉 RIGHT TEAM WIN!";
             winnerText.style.color = "#2962ff";
+            playerWon = (userTeam === 'right');
         }
         
         victoryOverlay.classList.add('active');
         canvas.style.display = 'block';
         startFireworks();
+
+        // Nếu player thắng → hiện nút nhận thưởng USDC
+        _showTugRewardButton(playerWon);
     }
+}
+
+// ── USDC REWARD (Tug of War) ───────────────────────────────
+let _tugPendingReward = 0;
+
+function _showTugRewardButton(playerWon) {
+    const old = document.getElementById('tug-reward-wrap');
+    if (old) old.remove();
+    if (!playerWon) return;
+
+    _tugPendingReward = Math.floor(Math.random() * 5) + 1;
+
+    const wrap = document.createElement('div');
+    wrap.id = 'tug-reward-wrap';
+    wrap.style.cssText = [
+        'position:absolute',
+        'bottom:30px',
+        'left:50%',
+        'transform:translateX(-50%)',
+        'z-index:200',
+        'display:flex',
+        'flex-direction:column',
+        'align-items:center',
+        'gap:8px'
+    ].join(';');
+
+    const label = document.createElement('p');
+    label.style.cssText = 'color:#ffe066; font-size:1.1rem; font-weight:900; letter-spacing:1px; text-shadow:0 2px 4px #000; text-align:center;';
+    label.textContent = `🎁 Phần thưởng: ${_tugPendingReward} USDC`;
+
+    const btn = document.createElement('button');
+    btn.id = 'tug-claim-btn';
+    btn.style.cssText = [
+        'padding:12px 36px',
+        'background:linear-gradient(135deg,#ffe066,#ffa825)',
+        'color:#0a0a1e',
+        'font-family:Rajdhani,sans-serif',
+        'font-size:1.2rem',
+        'font-weight:900',
+        'letter-spacing:2px',
+        'border:none',
+        'border-radius:30px',
+        'cursor:pointer',
+        'box-shadow:0 4px 20px rgba(255,168,37,.6)',
+        'transition:transform .15s'
+    ].join(';');
+    btn.textContent = '💰 NHẬN THƯỞNG USDC';
+    btn.onclick = async function() {
+        btn.disabled = true;
+        btn.textContent = '⏳ Đang xử lý…';
+        const ok = await window.SmicWallet.claimReward(_tugPendingReward);
+        if (ok) {
+            btn.textContent = '✅ Đã nhận!';
+            label.textContent = `🎉 +${_tugPendingReward} USDC đã về ví!`;
+        } else {
+            btn.disabled = false;
+            btn.textContent = '💰 NHẬN THƯỞNG USDC';
+        }
+    };
+
+    wrap.appendChild(label);
+    wrap.appendChild(btn);
+    document.querySelector('.overlay-content').appendChild(wrap);
 }
 
 function resetGame() {

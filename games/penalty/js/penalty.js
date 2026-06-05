@@ -1000,9 +1000,10 @@ function showFlash(msg, cls) {
 function endGame() {
     removeKeyControls();
     let trophy, title;
-    if      (playerScore > botScore) { trophy = '🏆'; title = 'YOU WIN!'; }
-    else if (playerScore < botScore) { trophy = '😞'; title = 'BOT WINS!'; }
-    else                             { trophy = '🤝'; title = "IT'S A DRAW!"; }
+    const playerWon = playerScore > botScore;
+    if      (playerWon)             { trophy = '🏆'; title = 'YOU WIN!'; }
+    else if (playerScore < botScore){ trophy = '😞'; title = 'BOT WINS!'; }
+    else                            { trophy = '🤝'; title = "IT'S A DRAW!"; }
     resultTrophy.textContent = trophy;
     resultTitle.textContent  = title;
     resultSub.textContent    = `${playerScore} – ${botScore}`;
@@ -1012,7 +1013,6 @@ function endGame() {
     if (!screenResult.querySelector('.result-bg')) {
         const bg = document.createElement('div');
         bg.className = 'result-bg';
-        // Path relative to HTML file location
         bg.style.backgroundImage = "url('../../assets/images/penalty/ketqua.png')";
         const vignette = document.createElement('div');
         vignette.className = 'result-vignette';
@@ -1020,7 +1020,68 @@ function endGame() {
         screenResult.insertBefore(bg, screenResult.firstChild);
     }
 
+    // Nếu thắng → thêm nút nhận thưởng USDC
+    _injectRewardButton(screenResult, playerWon);
+
     setTimeout(() => showScreen('screenResult'), 700);
+}
+
+// ── USDC REWARD ────────────────────────────────────────────
+let _pendingReward = 0;  // lưu số USDC random cho lần thắng này
+
+function _injectRewardButton(container, playerWon) {
+    // Xóa nút cũ nếu có
+    const old = container.querySelector('.reward-btn-wrap');
+    if (old) old.remove();
+    if (!playerWon) return;
+
+    // Random 1–5 USDC
+    _pendingReward = Math.floor(Math.random() * 5) + 1;
+
+    const wrap = document.createElement('div');
+    wrap.className = 'reward-btn-wrap';
+    wrap.style.cssText = 'margin-top:14px; display:flex; flex-direction:column; align-items:center; gap:6px;';
+
+    const label = document.createElement('p');
+    label.style.cssText = 'color:#ffe066; font-size:1rem; font-weight:800; letter-spacing:1px; text-align:center;';
+    label.textContent = `🎁 Phần thưởng: ${_pendingReward} USDC`;
+
+    const btn = document.createElement('button');
+    btn.id = 'claim-reward-btn';
+    btn.style.cssText = [
+        'padding:12px 32px',
+        'background:linear-gradient(135deg,#ffe066,#ffa825)',
+        'color:#0a0a1e',
+        'font-family:Bebas Neue,Bangers,cursive',
+        'font-size:1.2rem',
+        'letter-spacing:2px',
+        'border:none',
+        'border-radius:30px',
+        'cursor:pointer',
+        'box-shadow:0 4px 20px rgba(255,168,37,.5)',
+        'transition:transform .15s,box-shadow .15s'
+    ].join(';');
+    btn.textContent = '💰 NHẬN THƯỞNG USDC';
+    btn.onclick = async function() {
+        btn.disabled = true;
+        btn.textContent = '⏳ Đang xử lý…';
+        const ok = await window.SmicWallet.claimReward(_pendingReward);
+        if (ok) {
+            btn.textContent = '✅ Đã nhận!';
+            label.textContent = `🎉 +${_pendingReward} USDC đã về ví!`;
+        } else {
+            btn.disabled = false;
+            btn.textContent = '💰 NHẬN THƯỞNG USDC';
+        }
+    };
+
+    wrap.appendChild(label);
+    wrap.appendChild(btn);
+
+    // Chèn vào result-card (sau result-btns)
+    const card = container.querySelector('.result-card');
+    if (card) card.appendChild(wrap);
+    else container.appendChild(wrap);
 }
 
 // ── NAV ─────────────────────────────────────────────────

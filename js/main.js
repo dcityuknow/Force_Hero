@@ -15,7 +15,7 @@ for (let i = 0; i < 120; i++) {
     starsEl.appendChild(s);
 }
 
-// Launch game with fade transition
+// Launch game with fade transition – không cần ticket
 const overlay = document.createElement('div');
 overlay.className = 'launch-overlay';
 document.body.appendChild(overlay);

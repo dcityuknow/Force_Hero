@@ -1,17 +1,20 @@
 // ============================================================
-//  wallet.js  –  ARC Testnet USDC Ticket System (On-Chain)
+//  wallet.js  –  ARC Testnet USDC + Reward System (On-Chain)
 //  Chain ID    : 5042002 (0x4cef52)
 //  USDC        : 0x3600000000000000000000000000000000000000  (6 decimals)
 //  Treasury    : 0x4cd1d1b157f943feb2bebf2d36770ac3346e1128
-//  TicketSystem: 0x4698fa79738754B360E9a203E3e416CC8F680c92
+//  RewardSystem: 0x4698fa79738754B360E9a203E3e416CC8F680c92  ← contract phát thưởng
 // ============================================================
 
-const ARC_CHAIN_ID         = '0x4cef52';
-const ARC_RPC              = 'https://rpc.testnet.arc.network';
-const USDC_ADDRESS         = '0x3600000000000000000000000000000000000000';
-const TREASURY_ADDRESS     = '0x4cd1d1b157f943feb2bebf2d36770ac3346e1128';
-const TICKET_CONTRACT_ADDR = '0x4698fa79738754B360E9a203E3e416CC8F680c92';
-const USDC_DECIMALS        = 6;
+const ARC_CHAIN_ID          = '0x4cef52';
+const ARC_RPC               = 'https://rpc.testnet.arc.network';
+const USDC_ADDRESS          = '0x3600000000000000000000000000000000000000';
+const TREASURY_ADDRESS      = '0x4cd1d1b157f943feb2bebf2d36770ac3346e1128';
+const REWARD_CONTRACT_ADDR  = '0x4698fa79738754B360E9a203E3e416CC8F680c92'; // contract thưởng USDC
+const USDC_DECIMALS         = 6;
+
+// Giữ lại alias cũ để không break code cũ nào còn dùng
+const TICKET_CONTRACT_ADDR  = REWARD_CONTRACT_ADDR;
 
 // ── ABI encoders ───────────────────────────────────────────
 
@@ -630,3 +633,143 @@ window.SmicWallet = {
   closeWalletPicker,
   switchToARC
 };
+
+// ============================================================
+//  REWARD SYSTEM – thưởng USDC khi thắng (Signature Verified)
+//
+//  Luồng bảo mật:
+//  1. Frontend gọi backend API: POST /api/sign-reward { player, amount }
+//  2. Backend kiểm tra game session hợp lệ, tạo nonce + expiry, ký ECDSA
+//  3. Frontend nhận { amount, nonce, expiry, signature } từ backend
+//  4. Frontend gọi contract claimReward(amount, nonce, expiry, signature)
+//  5. Contract verify chữ ký on-chain → chuyển USDC
+//
+//  ⚠️  Cập nhật BACKEND_API_URL bên dưới bằng URL server của bạn
+// ============================================================
+
+const BACKEND_API_URL = 'https://your-backend.com'; // ← đổi thành URL backend của bạn
+
+/**
+ * ABI encoder cho:
+ * claimReward(uint256 amount, uint256 nonce, uint256 expiry, bytes signature)
+ *
+ * selector = bytes4(keccak256("claimReward(uint256,uint256,uint256,bytes)"))
+ * = 0x??????  ← sẽ được tính đúng sau khi compile contract
+ *
+ * Vì `bytes` là dynamic type, encoding theo ABI spec:
+ *  [selector][amount][nonce][expiry][offset_bytes][length_bytes][bytes_data_padded]
+ */
+function encodeClaimRewardSigned(amount, nonce, expiry, sigHex) {
+  // selector: bytes4(keccak256("claimReward(uint256,uint256,uint256,bytes)"))
+  // Tính bằng: web3.utils.keccak256("claimReward(uint256,uint256,uint256,bytes)").slice(0,10)
+  // Placeholder – cập nhật sau khi compile contract thực tế:
+  const selector = 'a3d5b2c1';
+
+  const p = (v) => BigInt(v).toString(16).padStart(64, '0');
+
+  // Offset của bytes param (sau 3 uint256 = 96 bytes = 0x60)
+  const bytesOffset = p(96);
+
+  // Signature bytes (65 bytes = 0x41)
+  const cleanSig = sigHex.replace(/^0x/, '');
+  const sigLen   = p(cleanSig.length / 2);
+  // Pad sig to 32-byte boundary
+  const padded   = cleanSig.padEnd(Math.ceil(cleanSig.length / 64) * 64, '0');
+
+  return '0x' + selector
+    + p(amount * (10 ** USDC_DECIMALS))   // amount in wei
+    + p(nonce)
+    + p(expiry)
+    + bytesOffset
+    + sigLen
+    + padded;
+}
+
+/**
+ * Bước 1: Gọi backend để xin chữ ký thưởng.
+ * Backend sẽ:
+ *   - Xác minh game session / match result
+ *   - Tạo nonce ngẫu nhiên (chống replay)
+ *   - Set expiry = now + 5 phút
+ *   - Ký: keccak256(abi.encodePacked(player, amount, nonce, expiry, chainId, contractAddress))
+ *   - Trả về { amount, nonce, expiry, signature }
+ */
+async function requestRewardSignature(amountUsdc) {
+  const res = await fetch(`${BACKEND_API_URL}/api/sign-reward`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      player:  walletAddress,
+      amount:  amountUsdc,
+      chainId: parseInt(ARC_CHAIN_ID, 16),
+      contract: REWARD_CONTRACT_ADDR
+    })
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || `Backend error ${res.status}`);
+  }
+
+  return res.json(); // { amount, nonce, expiry, signature }
+}
+
+/**
+ * Bước 2: Gọi contract với chữ ký đã được backend cấp.
+ */
+async function claimReward(amountUsdc) {
+  if (!walletAddress) {
+    const addr = await connectWallet();
+    if (!addr) return false;
+  }
+
+  const provider = activeProvider || window.ethereum;
+  if (!provider) { showToast('❌ Không tìm thấy ví!'); return false; }
+
+  try {
+    // ── Xin chữ ký từ backend ──
+    showToast('🔐 Đang xác minh kết quả với server…');
+    let signedData;
+    try {
+      signedData = await requestRewardSignature(amountUsdc);
+    } catch (apiErr) {
+      showToast('❌ Server từ chối: ' + apiErr.message);
+      return false;
+    }
+
+    const { amount, nonce, expiry, signature } = signedData;
+
+    // ── Gọi contract với chữ ký ──
+    showToast(`🎁 Đang nhận thưởng ${amount} USDC…`);
+    const txHash = await provider.request({
+      method: 'eth_sendTransaction',
+      params: [{
+        from: walletAddress,
+        to:   REWARD_CONTRACT_ADDR,
+        data: encodeClaimRewardSigned(amount, nonce, expiry, signature),
+        gas:  '0x493E0'   // 300.000 gas
+      }]
+    });
+
+    showToast('⏳ Đang xác nhận giao dịch…');
+    const receipt = await waitForReceipt(txHash);
+
+    if (receipt) {
+      showToast(`🎉 Nhận thưởng thành công! +${amount} USDC`);
+      return true;
+    }
+    return false;
+
+  } catch (e) {
+    if (e.code === 4001) {
+      showToast('❌ Giao dịch bị huỷ.');
+    } else {
+      console.error('claimReward error:', e);
+      showToast('❌ Lỗi: ' + (e.message || 'unknown'));
+    }
+    return false;
+  }
+}
+
+// Expose claimReward ra global
+window.SmicWallet.claimReward = claimReward;

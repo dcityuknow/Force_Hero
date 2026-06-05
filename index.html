@@ -14,10 +14,6 @@
 
   <!-- ── Wallet Bar (top-right) ── -->
   <div class="wallet-bar">
-    <div class="ticket-badge">
-      🎟️ <span class="ticket-count">0</span>
-    </div>
-    <button class="buy-ticket-btn" onclick="SmicWallet.openBuyModal()">+ Buy Ticket</button>
     <button class="wallet-btn" id="wallet-btn" onclick="SmicWallet.connect()">🔗 Connect Wallet</button>
     <span class="wallet-address" id="wallet-address" style="display:none"></span>
   </div>
@@ -41,7 +37,7 @@
         <span class="tag">VS Bot</span>
         <span class="tag">Level 1–9</span>
       </div>
-      <div class="card-play-btn">PLAY NOW → <span class="ticket-cost">🎟️ 1</span></div>
+      <div class="card-play-btn">PLAY NOW →</div>
     </div>
 
     <!-- PENALTY SHOOTOUT -->
@@ -56,7 +52,7 @@
         <span class="tag">Goalkeeper</span>
         <span class="tag">VS Bot</span>
       </div>
-      <div class="card-play-btn">PLAY NOW → <span class="ticket-cost">🎟️ 1</span></div>
+      <div class="card-play-btn">PLAY NOW →</div>
     </div>
   </div>
 
@@ -65,74 +61,12 @@
   </footer>
 </div>
 
-<!-- ── Buy Ticket Modal ── -->
-<div class="modal-overlay" id="buy-modal" onclick="handleOverlayClick(event)">
-  <div class="modal-box">
-    <button class="modal-close" onclick="SmicWallet.closeBuyModal()">✕</button>
-    <div class="modal-icon">🎟️</div>
-    <h2 class="modal-title">Buy Tickets</h2>
-    <p class="modal-desc">1 Ticket = <strong>1 USDC</strong><br>Dùng để vào chơi mỗi game</p>
-
-    <div class="qty-selector">
-      <button class="qty-btn" onclick="changeQty(-1)">−</button>
-      <span class="qty-value" id="qty-value">1</span>
-      <button class="qty-btn" onclick="changeQty(1)">+</button>
-    </div>
-
-    <div class="modal-total">
-      Tổng: <strong id="total-usdc">1 USDC</strong>
-    </div>
-
-    <button class="modal-confirm-btn" id="confirm-btn" onclick="confirmBuy()">
-      🔗 Xác nhận & Thanh toán
-    </button>
-
-    <p class="modal-note">
-      Mạng: ARC Testnet · USDC native<br>
-      <a href="https://faucet.circle.com" target="_blank">Nhận USDC testnet miễn phí →</a>
-    </p>
-  </div>
-</div>
-
 <script src="js/wallet.js"></script>
 <script src="js/main.js"></script>
 <script>
-  // ── Quantity selector ──
-  let currentQty = 1;
-  const MAX_QTY = 10;
-
-  function changeQty(delta) {
-    currentQty = Math.min(MAX_QTY, Math.max(1, currentQty + delta));
-    document.getElementById('qty-value').textContent = currentQty;
-    document.getElementById('total-usdc').textContent = currentQty + ' USDC';
-  }
-
-  function handleOverlayClick(e) {
-    if (e.target.id === 'buy-modal') SmicWallet.closeBuyModal();
-  }
-
-  async function confirmBuy() {
-    const btn = document.getElementById('confirm-btn');
-    btn.disabled = true;
-    btn.textContent = '⏳ Đang xử lý…';
-    const ok = await SmicWallet.buyTickets(currentQty);
-    btn.disabled = false;
-    btn.textContent = '🔗 Xác nhận & Thanh toán';
-    if (ok) SmicWallet.closeBuyModal();
-  }
-
-  // ── Game launcher với ticket check ──
+  // ── Game launcher – không cần ticket, vào thẳng ──
   function launchGame(url) {
-    if (SmicWallet.getTickets() < 1) {
-      SmicWallet.openBuyModal();
-      SmicWallet.showToast('🎟️ Bạn cần mua ticket trước khi chơi!');
-      return;
-    }
-    // Trừ 1 ticket rồi đánh dấu để game không trừ thêm
-    SmicWallet.useTicket();
-    sessionStorage.setItem('smic_ticket_spent', '1');
-    SmicWallet.showToast('🎟️ Đã dùng 1 ticket. Chúc vui!');
-    setTimeout(() => { window.location.href = url; }, 800);
+    window.location.href = url;
   }
 </script>
 </body>
