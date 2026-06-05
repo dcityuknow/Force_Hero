@@ -154,4 +154,7 @@ contract RewardSystem is Ownable {
         require(ok, "Withdraw failed");
         emit FundsWithdrawn(amount);
     }
+    receive() external payable {
+    emit FundsDeposited(msg.value);   // optional
+    }
 }
