@@ -172,6 +172,27 @@ nano ~/Force_Hero/js/wallet.js
 # Đổi REWARD_CONTRACT_ADDR = '0x_địa_chỉ_contract_mới'
 ```
 
+**5. Tạo backend với https**
+Cài Nginx
+```
+sudo apt update
+sudo apt install nginx -y
+```
+
+Kiểm tra Nginx:
+```
+sudo systemctl status nginx
+```
+
+Tạo file cấu hình Nginx cho subdomain
+```
+sudo nano /etc/nginx/sites-available/force-hero-api
+```
+
+
+
+
+
 
 
 
