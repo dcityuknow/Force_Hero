@@ -199,6 +199,16 @@ server {
 }
 ```
 
+Check trạng thái
+```
+sudo nginx -t
+sudo systemctl restart nginx
+```
+
+Chạy Certbot
+```
+sudo certbot --nginx -d force-hero-api.apollo-sync.com
+```
 
 
 
