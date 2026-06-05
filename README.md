@@ -173,6 +173,7 @@ nano ~/Force_Hero/js/wallet.js
 ```
 
 **5. Tạo backend với https**
+
 Cài Nginx
 ```
 sudo apt update
@@ -188,6 +189,17 @@ Tạo file cấu hình Nginx cho subdomain
 ```
 sudo nano /etc/nginx/sites-available/force-hero-api
 ```
+```
+server {
+    listen 80;
+    server_name force-hero-api.apollo-sync.com;
+
+    # Redirect HTTP → HTTPS (sẽ tự động sau khi certbot chạy)
+    return 301 https://$server_name$request_uri;
+}
+```
+
+
 
 
 
