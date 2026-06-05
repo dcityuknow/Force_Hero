@@ -122,6 +122,14 @@ cd ~/Force_Hero
 nano .gitignore
 ```
 
+Mở port 3001
+```
+sudo ufw allow 3001
+sudo ufw allow 22
+sudo ufw enable
+# Gõ y khi hỏi
+```
+
 ```
 cd ~/Force_Hero/backend
 node reward-backend.js
@@ -133,6 +141,7 @@ input :
 ✅ Chain ID:       5042002
 🚀 Reward backend running on http://localhost:3001
 ```
+
 
 
 
