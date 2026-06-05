@@ -110,11 +110,23 @@ nano .env
 
 điền vào tệp .env nội dung sau : 
 ```
-SIGNER_PRIVATE_KEY=0x_private_key_ví_signer_của_bạn
+SIGNER_PRIVATE_KEY=0x_private_key_ví_signer_của_bạn( nên là ví trắng ) 
 REWARD_CONTRACT=0x_địa_chỉ_contract_sau_khi_deploy
 ARC_CHAIN_ID=5042002
 PORT=3001
 ```
+
+tạo tệp bảo vệ tránh lộ key
+```
+cd ~/Force_Hero
+nano .gitignore
+```
+
+```
+cd ~/Force_Hero/backend
+node reward-backend.js
+```
+
 
 
 
