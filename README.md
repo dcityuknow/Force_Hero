@@ -73,7 +73,7 @@ Force Hero là **Game Hub** đa thể loại, cho phép người chơi:
         └── penalty/                  ← Âm thanh penalty
 ```
 
-**cài đặt biến môi trường**
+**1. cài đặt biến môi trường**
 ```
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
 ```
@@ -93,6 +93,22 @@ nvm alias default 22
 node -v    # → v22.xx.x
 npm -v     # → 10.xx.x
 ```
+
+**2. Cài đặt game**
+```
+git clone https://github.com/dcityuknow/Force_Hero.git
+```
+
+```
+npm init -y
+npm install express ethers dotenv cors
+```
+
+```
+nano .env
+```
+
+
 
 
 
