@@ -10,7 +10,7 @@ const ARC_CHAIN_ID          = '0x4cef52';
 const ARC_RPC               = 'https://rpc.testnet.arc.network';
 const USDC_ADDRESS          = '0x3600000000000000000000000000000000000000';
 const TREASURY_ADDRESS      = '0x4cd1d1b157f943feb2bebf2d36770ac3346e1128';
-const REWARD_CONTRACT_ADDR  = '0x4698fa79738754B360E9a203E3e416CC8F680c92'; // contract thưởng USDC
+const REWARD_CONTRACT_ADDR  = '0x043e7BBF1B2a1E94aD7a24bC5B8a80d110Ec85AB'; // contract thưởng USDC
 const USDC_DECIMALS         = 6;
 
 // Giữ lại alias cũ để không break code cũ nào còn dùng
