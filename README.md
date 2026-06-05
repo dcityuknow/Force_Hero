@@ -126,6 +126,13 @@ nano .gitignore
 cd ~/Force_Hero/backend
 node reward-backend.js
 ```
+input :
+```
+✅ Signer address: 0x...
+✅ Contract:       0x...
+✅ Chain ID:       5042002
+🚀 Reward backend running on http://localhost:3001
+```
 
 
 
