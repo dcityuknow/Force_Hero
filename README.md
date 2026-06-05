@@ -148,7 +148,8 @@ http://46.225.230.122:3001/health
 
 output : {"ok":true,"signer":"0x78962ad7..."}
 
-**3. Cập nhật wallet.js trong repo **
+**3. Cập nhật wallet.js trong repo**
+
 ```
 nano ~/Force_Hero/js/wallet.js
 ```
@@ -159,6 +160,16 @@ const BACKEND_API_URL = 'https://your-backend.com';
 Đổi thành:
 ```
 const BACKEND_API_URL = 'http://46.225.230.122:3001';
+```
+**4.Nếu bạn deloy contracts mới**
+```
+nano ~/Force_Hero/backend/.env
+# Đổi REWARD_CONTRACT=0x_địa_chỉ_contract_mới
+pm2 restart smic-reward
+```
+```
+nano ~/Force_Hero/js/wallet.js
+# Đổi REWARD_CONTRACT_ADDR = '0x_địa_chỉ_contract_mới'
 ```
 
 
