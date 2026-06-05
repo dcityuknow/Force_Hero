@@ -647,7 +647,7 @@ window.SmicWallet = {
 //  ⚠️  Cập nhật BACKEND_API_URL bên dưới bằng URL server của bạn
 // ============================================================
 
-const BACKEND_API_URL = 'https://your-backend.com'; // ← đổi thành URL backend của bạn
+const BACKEND_API_URL = 'http://46.225.230.122:3001'; // ← đổi thành URL backend của bạn
 
 /**
  * ABI encoder cho:
